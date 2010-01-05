@@ -30,7 +30,7 @@ except: # for Python < 2.5
     import md5
     _md5func = md5.new
 
-from errors import InvalidId
+from .errors import InvalidId
 
 
 def _machine_bytes():
@@ -107,7 +107,7 @@ class ObjectId(object):
         """
         if isinstance(oid, ObjectId):
             self.__id = oid.__id
-        elif isinstance(oid, basestring):
+        elif isinstance(oid, str):
             if len(oid) == 12:
                 self.__id = oid
             elif len(oid) == 24:

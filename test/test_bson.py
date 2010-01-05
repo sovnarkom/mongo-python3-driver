@@ -29,7 +29,7 @@ sys.path[0:0] = [""]
 
 from nose.plugins.skip import SkipTest
 
-import qcheck
+from .. import qcheck
 from pymongo.binary import Binary
 from pymongo.code import Code
 from pymongo.objectid import ObjectId
@@ -46,7 +46,7 @@ class TestBSON(unittest.TestCase):
 
     def test_basic_validation(self):
         self.assertRaises(TypeError, is_valid, 100)
-        self.assertRaises(TypeError, is_valid, u"test")
+        self.assertRaises(TypeError, is_valid, "test")
         self.assertRaises(TypeError, is_valid, 10.4)
 
         self.failIf(is_valid("test"))
@@ -64,11 +64,11 @@ class TestBSON(unittest.TestCase):
                               qcheck.gen_string(qcheck.gen_range(0, 40)))
 
     def test_basic_to_dict(self):
-        self.assertEqual({"test": u"hello world"},
+        self.assertEqual({"test": "hello world"},
                          BSON("\x1B\x00\x00\x00\x0E\x74\x65\x73\x74\x00\x0C"
                               "\x00\x00\x00\x68\x65\x6C\x6C\x6F\x20\x77\x6F"
                               "\x72\x6C\x64\x00\x00").to_dict())
-        self.assertEqual([{"test": u"hello world"}, {}],
+        self.assertEqual([{"test": "hello world"}, {}],
                          _to_dicts("\x1B\x00\x00\x00\x0E\x74\x65\x73\x74\x00"
                                    "\x0C\x00\x00\x00\x68\x65\x6C\x6C\x6F\x20"
                                    "\x77\x6F\x72\x6C\x64\x00\x00\x05\x00\x00"
@@ -86,11 +86,11 @@ class TestBSON(unittest.TestCase):
         self.assertRaises(TypeError, BSON.from_dict, [])
 
         self.assertEqual(BSON.from_dict({}), BSON("\x05\x00\x00\x00\x00"))
-        self.assertEqual(BSON.from_dict({"test": u"hello world"}),
+        self.assertEqual(BSON.from_dict({"test": "hello world"}),
                          "\x1B\x00\x00\x00\x02\x74\x65\x73\x74\x00\x0C\x00\x00"
                          "\x00\x68\x65\x6C\x6C\x6F\x20\x77\x6F\x72\x6C\x64\x00"
                          "\x00")
-        self.assertEqual(BSON.from_dict({u"mike": 100}),
+        self.assertEqual(BSON.from_dict({"mike": 100}),
                          "\x0F\x00\x00\x00\x10\x6D\x69\x6B\x65\x00\x64\x00\x00"
                          "\x00\x00")
         self.assertEqual(BSON.from_dict({"hello": 1.5}),
@@ -142,23 +142,23 @@ class TestBSON(unittest.TestCase):
         def helper(dict):
             self.assertEqual(dict, (BSON.from_dict(dict)).to_dict())
         helper({})
-        helper({"test": u"hello"})
+        helper({"test": "hello"})
         self.assert_(isinstance(BSON.from_dict({"hello": "world"})
                                 .to_dict()["hello"],
-                                unicode))
+                                str))
         helper({"mike": -10120})
-        helper({"long": long(10)})
+        helper({"long": int(10)})
         helper({"really big long": 2147483648})
-        helper({u"hello": 0.0013109})
+        helper({"hello": 0.0013109})
         helper({"something": True})
         helper({"false": False})
-        helper({"an array": [1, True, 3.8, u"world"]})
-        helper({"an object": {"test": u"something"}})
+        helper({"an array": [1, True, 3.8, "world"]})
+        helper({"an object": {"test": "something"}})
         helper({"a binary": Binary("test", 100)})
         helper({"a binary": Binary("test", 128)})
         helper({"a binary": Binary("test", 254)})
         helper({"another binary": Binary("test")})
-        helper(SON([(u'test dst', datetime.datetime(1993, 4, 4, 2))]))
+        helper(SON([('test dst', datetime.datetime(1993, 4, 4, 2))]))
         helper({"big float": float(10000000000)})
         helper({"ref": DBRef("coll", 5)})
         helper({"ref": DBRef("coll", 5, "foo")})
@@ -174,11 +174,11 @@ class TestBSON(unittest.TestCase):
                           {"lalala": '\xf4\xe0\xf0\xe1\xc0 Color Touch'})
 
     def test_overflow(self):
-        self.assert_(BSON.from_dict({"x": 9223372036854775807L}))
-        self.assertRaises(OverflowError, BSON.from_dict, {"x": 9223372036854775808L})
+        self.assert_(BSON.from_dict({"x": 9223372036854775807}))
+        self.assertRaises(OverflowError, BSON.from_dict, {"x": 9223372036854775808})
 
-        self.assert_(BSON.from_dict({"x": -9223372036854775808L}))
-        self.assertRaises(OverflowError, BSON.from_dict, {"x": -9223372036854775809L})
+        self.assert_(BSON.from_dict({"x": -9223372036854775808}))
+        self.assertRaises(OverflowError, BSON.from_dict, {"x": -9223372036854775809})
 
     def test_tuple(self):
         self.assertEqual({"tuple": [1, 2]},
@@ -198,7 +198,7 @@ class TestBSON(unittest.TestCase):
     # The C extension was segfaulting on unicode RegExs, so we have this test
     # that doesn't really test anything but the lack of a segfault.
     def test_unicode_regex(self):
-        regex = re.compile(u'revisi\xf3n')
+        regex = re.compile('revisi\xf3n')
         BSON.from_dict({"regex": regex}).to_dict()
 
     def test_non_string_keys(self):
@@ -208,30 +208,30 @@ class TestBSON(unittest.TestCase):
         self.assertRaises(InvalidDocument, BSON.from_dict, {"key": "x"*4*1024*1024})
 
     def test_utf8(self):
-        w = {u"aéあ": u"aéあ"}
+        w = {"aéあ": "aéあ"}
         self.assertEqual(w, BSON.from_dict(w).to_dict())
 
-        x = {u"aéあ".encode("utf-8"): u"aéあ".encode("utf-8")}
+        x = {"aéあ".encode("utf-8"): "aéあ".encode("utf-8")}
         self.assertEqual(w, BSON.from_dict(x).to_dict())
 
-        y = {"hello": u"aé".encode("iso-8859-1")}
+        y = {"hello": "aé".encode("iso-8859-1")}
         self.assertRaises(InvalidStringData, BSON.from_dict, y)
 
-        z = {u"aé".encode("iso-8859-1"): "hello"}
+        z = {"aé".encode("iso-8859-1"): "hello"}
         self.assertRaises(InvalidStringData, BSON.from_dict, z)
 
     def test_null_character(self):
         doc = {"a": "\x00"}
         self.assertEqual(doc, BSON.from_dict(doc).to_dict())
 
-        doc = {"a": u"\x00"}
+        doc = {"a": "\x00"}
         self.assertEqual(doc, BSON.from_dict(doc).to_dict())
 
         self.assertRaises(InvalidDocument, BSON.from_dict, {"\x00": "a"})
-        self.assertRaises(InvalidDocument, BSON.from_dict, {u"\x00": "a"})
+        self.assertRaises(InvalidDocument, BSON.from_dict, {"\x00": "a"})
 
         self.assertRaises(InvalidDocument, BSON.from_dict, {"a": re.compile("ab\x00c")})
-        self.assertRaises(InvalidDocument, BSON.from_dict, {"a": re.compile(u"ab\x00c")})
+        self.assertRaises(InvalidDocument, BSON.from_dict, {"a": re.compile("ab\x00c")})
 
 # TODO this test doesn't pass w/ C extension
 #

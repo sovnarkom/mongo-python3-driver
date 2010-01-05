@@ -16,7 +16,7 @@
 
 import types
 
-from son import SON
+from .son import SON
 
 
 class DBRef(object):
@@ -38,9 +38,9 @@ class DBRef(object):
         .. versionadded:: 1.1.1
            The `database` parameter.
         """
-        if not isinstance(collection, types.StringTypes):
+        if not isinstance(collection, str):
             raise TypeError("collection must be an instance of (str, unicode)")
-        if not isinstance(database, (types.StringTypes, types.NoneType)):
+        if not isinstance(database, (str, type(None))):
             raise TypeError("database must be an instance of (str, unicode)")
 
         self.__collection = collection

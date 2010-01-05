@@ -20,8 +20,8 @@ instances."""
 import types
 import random
 
-from database import Database
-from connection import Connection
+from .database import Database
+from .connection import Connection
 
 
 class MasterSlaveConnection(object):
@@ -52,7 +52,7 @@ class MasterSlaveConnection(object):
         """
         if not isinstance(master, Connection):
             raise TypeError("master must be a Connection instance")
-        if not isinstance(slaves, types.ListType) or len(slaves) == 0:
+        if not isinstance(slaves, list) or len(slaves) == 0:
             raise TypeError("slaves must be a list of length >= 1")
 
         for slave in slaves:
@@ -230,7 +230,7 @@ class MasterSlaveConnection(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         raise TypeError("'MasterSlaveConnection' object is not iterable")
 
     def _cache_index(self, database_name, collection_name, index_name, ttl):

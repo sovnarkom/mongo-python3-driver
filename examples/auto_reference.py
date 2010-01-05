@@ -30,7 +30,7 @@ from pymongo.son_manipulator import AutoReference, NamespaceInjector
 try:
     connection = Connection("localhost", 27017)
 except ConnectionFailure:
-    print "couldn't connect: be sure that Mongo is running on localhost:27017"
+    print("couldn't connect: be sure that Mongo is running on localhost:27017")
     sys.exit(1)
 
 # We need a database to use, but first make sure it's clean.
@@ -62,4 +62,4 @@ db.messages.save(m)
 # dereferenced. As a result, the change in message title is evident in the
 # retrieved document.
 u = db.users.find_one()
-print "%s %s" % (u["name"], u["message"]["title"])
+print("%s %s" % (u["name"], u["message"]["title"]))

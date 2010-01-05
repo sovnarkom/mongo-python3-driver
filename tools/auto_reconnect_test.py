@@ -32,10 +32,10 @@ class Something(threading.Thread):
                 assert db.test.find_one(id)["x"] == 1
                 db.test.remove(id)
                 db.connection().end_request()
-                print "Y"
-            except ConnectionFailure, e:
-                print e
-                print "N"
+                print("Y")
+            except ConnectionFailure as e:
+                print(e)
+                print("N")
 
 for _ in range(1):
     t = Something()

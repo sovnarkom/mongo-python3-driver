@@ -150,7 +150,7 @@ class SaveAndFind(threading.Thread):
         self.database = database
 
     def run(self):
-        for _ in xrange(100):
+        for _ in range(100):
             rand = random.randint(0, 100)
             id = self.database.mt_test.save({"x": rand})
             assert self.database.mt_test.find_one(id)["x"] == rand

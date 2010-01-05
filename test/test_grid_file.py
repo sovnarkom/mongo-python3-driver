@@ -21,8 +21,8 @@ import os
 import sys
 sys.path[0:0] = [""]
 
-import qcheck
-from test_connection import get_connection
+from . import qcheck
+from .test_connection import get_connection
 from gridfs.grid_file import GridFile, _SEEK_END, _SEEK_CUR
 
 
@@ -133,11 +133,11 @@ class TestGridFile(unittest.TestCase):
         self.assertRaises(TypeError, GridFile, {}, self.db, 5)
         self.assertRaises(TypeError, GridFile, {}, self.db, [])
         self.assertRaises(ValueError, GridFile, {}, self.db, "m")
-        self.assertRaises(ValueError, GridFile, {}, self.db, u"m")
+        self.assertRaises(ValueError, GridFile, {}, self.db, "m")
         GridFile({}, self.db, "r").close()
-        GridFile({}, self.db, u"r").close()
+        GridFile({}, self.db, "r").close()
         GridFile({}, self.db, "w").close()
-        GridFile({}, self.db, u"w").close()
+        GridFile({}, self.db, "w").close()
 
         self.assertRaises(TypeError, GridFile, {}, self.db, "r", None)
         self.assertRaises(TypeError, GridFile, {}, self.db, "r", 5)

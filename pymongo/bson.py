@@ -22,13 +22,13 @@ import re
 import datetime
 import calendar
 
-from binary import Binary
-from code import Code
-from objectid import ObjectId
-from dbref import DBRef
-from son import SON
-from errors import InvalidBSON, InvalidDocument
-from errors import InvalidName, InvalidStringData
+from .binary import Binary
+from .code import Code
+from .objectid import ObjectId
+from .dbref import DBRef
+from .son import SON
+from .errors import InvalidBSON, InvalidDocument
+from .errors import InvalidName, InvalidStringData
 
 try:
     import _cbson
@@ -59,14 +59,14 @@ def _get_c_string(data, length=None):
         except ValueError:
             raise InvalidBSON()
 
-    return (unicode(data[:length], "utf-8"), data[length + 1:])
+    return (str(data[:length], "utf-8"), data[length + 1:])
 
 
 def _make_c_string(string, check_null=False):
     if check_null and "\x00" in string:
         raise InvalidDocument("BSON keys / regex patterns must not "
                               "contain a NULL character")
-    if isinstance(string, unicode):
+    if isinstance(string, str):
         return string.encode("utf-8") + "\x00"
     else:
         try:
@@ -380,7 +380,7 @@ _RE_TYPE = type(_valid_array_name)
 
 
 def _element_to_bson(key, value, check_keys):
-    if not isinstance(key, (str, unicode)):
+    if not isinstance(key, str):
         raise InvalidDocument("documents must have only string keys, key was %r" % key)
 
     if check_keys:
@@ -418,14 +418,14 @@ def _element_to_bson(key, value, check_keys):
         cstring = _make_c_string(value)
         length = struct.pack("<i", len(cstring))
         return "\x02" + name + length + cstring
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         cstring = _make_c_string(value)
         length = struct.pack("<i", len(cstring))
         return "\x02" + name + length + cstring
     if isinstance(value, dict):
         return "\x03" + name + _dict_to_bson(value, check_keys)
     if isinstance(value, (list, tuple)):
-        as_dict = SON(zip([str(i) for i in range(len(value))], value))
+        as_dict = SON(list(zip([str(i) for i in range(len(value))], value)))
         return "\x04" + name + _dict_to_bson(as_dict, check_keys)
     if isinstance(value, ObjectId):
         return "\x07" + name + value.binary
@@ -433,7 +433,7 @@ def _element_to_bson(key, value, check_keys):
         return "\x08" + name + "\x01"
     if value is False:
         return "\x08" + name + "\x00"
-    if isinstance(value, (int, long)):
+    if isinstance(value, int):
         # TODO this is a really ugly way to check for this...
         if value > 2**64 / 2 - 1 or value < -2**64 / 2:
             raise OverflowError("MongoDB can only handle up to 8-byte ints")
@@ -474,7 +474,7 @@ def _dict_to_bson(dict, check_keys):
         elements = ""
         if "_id" in dict:
             elements += _element_to_bson("_id", dict["_id"], False)
-        for (key, value) in dict.iteritems():
+        for (key, value) in dict.items():
             if key != "_id":
                 elements += _element_to_bson(key, value, check_keys)
     except AttributeError:
@@ -520,7 +520,7 @@ def is_valid(bson):
     :Parameters:
       - `bson`: the data to be validated
     """
-    if not isinstance(bson, types.StringType):
+    if not isinstance(bson, bytes):
         raise TypeError("BSON data must be an instance of a subclass of str")
 
     # 4 MB limit

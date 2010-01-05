@@ -27,7 +27,7 @@ import struct
 import random
 import sys
 
-import bson
+from . import bson
 
 try:
     import _cbson

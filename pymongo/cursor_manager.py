@@ -43,7 +43,7 @@ class CursorManager(object):
         :Parameters:
           - `cursor_id`: cursor id to close
         """
-        if not isinstance(cursor_id, (types.IntType, types.LongType)):
+        if not isinstance(cursor_id, int):
             raise TypeError("cursor_id must be an instance of (int, long)")
 
         self.__connection.kill_cursors([cursor_id])
@@ -78,7 +78,7 @@ class BatchCursorManager(CursorManager):
         :Parameters:
           - `cursor_id`: cursor id to close
         """
-        if not isinstance(cursor_id, (types.IntType, types.LongType)):
+        if not isinstance(cursor_id, int):
             raise TypeError("cursor_id must be an instance of (int, long)")
 
         self.__dying_cursors.append(cursor_id)

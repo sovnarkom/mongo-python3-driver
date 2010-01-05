@@ -18,13 +18,13 @@ import types
 import warnings
 import struct
 
-import helpers
-import message
-from objectid import ObjectId
-from cursor import Cursor
-from son import SON
-from errors import InvalidName, OperationFailure
-from code import Code
+from . import helpers
+from . import message
+from .objectid import ObjectId
+from .cursor import Cursor
+from .son import SON
+from .errors import InvalidName, OperationFailure
+from .code import Code
 
 _ZERO = "\x00\x00\x00\x00"
 
@@ -48,10 +48,10 @@ class Collection(object):
           - `options`: dictionary of collection options.
             see `pymongo.database.Database.create_collection` for details.
         """
-        if not isinstance(name, types.StringTypes):
+        if not isinstance(name, str):
             raise TypeError("name must be an instance of (str, unicode)")
 
-        if not isinstance(options, (types.DictType, types.NoneType)):
+        if not isinstance(options, (dict, type(None))):
             raise TypeError("options must be an instance of dict")
 
         if not name or ".." in name:
@@ -65,8 +65,8 @@ class Collection(object):
                               "or end with '.': %r" % name)
 
         self.__database = database
-        self.__name = unicode(name)
-        self.__full_name = u"%s.%s" % (self.__database.name, self.__name)
+        self.__name = str(name)
+        self.__full_name = "%s.%s" % (self.__database.name, self.__name)
         # TODO remove the callable_value wrappers after deprecation is complete
         self.__database_w = helpers.callable_value(self.__database,
                                                    "Collection.database")
@@ -99,7 +99,7 @@ class Collection(object):
         :Parameters:
           - `name`: the name of the collection to get
         """
-        return Collection(self.__database, u"%s.%s" % (self.__name, name))
+        return Collection(self.__database, "%s.%s" % (self.__name, name))
 
     def __getitem__(self, name):
         return self.__getattr__(name)
@@ -165,7 +165,7 @@ class Collection(object):
           - `manipulate` (optional): manipulate the SON object before saving it
           - `safe` (optional): check that the save succeeded?
         """
-        if not isinstance(to_save, types.DictType):
+        if not isinstance(to_save, dict):
             raise TypeError("cannot save object of type %s" % type(to_save))
 
         if "_id" not in to_save:
@@ -198,7 +198,7 @@ class Collection(object):
            Bulk insert works with any iterable
         """
         docs = doc_or_docs
-        if isinstance(docs, types.DictType):
+        if isinstance(docs, dict):
             docs = [docs]
 
         if manipulate:
@@ -255,11 +255,11 @@ class Collection(object):
 
         .. _update modifiers: http://www.mongodb.org/display/DOCS/Updating
         """
-        if not isinstance(spec, types.DictType):
+        if not isinstance(spec, dict):
             raise TypeError("spec must be an instance of dict")
-        if not isinstance(document, types.DictType):
+        if not isinstance(document, dict):
             raise TypeError("document must be an instance of dict")
-        if not isinstance(upsert, types.BooleanType):
+        if not isinstance(upsert, bool):
             raise TypeError("upsert must be an instance of bool")
 
         if upsert and manipulate:
@@ -310,7 +310,7 @@ class Collection(object):
         if isinstance(spec, ObjectId):
             spec = {"_id": spec}
 
-        if not isinstance(spec, types.DictType):
+        if not isinstance(spec, dict):
             raise TypeError("spec must be an instance of dict, not %s" %
                             type(spec))
 
@@ -358,7 +358,7 @@ class Collection(object):
         """
         as_dict = {}
         for field in fields:
-            if not isinstance(field, types.StringTypes):
+            if not isinstance(field, str):
                 raise TypeError("fields must be a list of key names as "
                                 "(string, unicode)")
             as_dict[field] = 1
@@ -425,21 +425,21 @@ class Collection(object):
                           "itself.",
                           DeprecationWarning)
 
-        if not isinstance(spec, types.DictType):
+        if not isinstance(spec, dict):
             raise TypeError("spec must be an instance of dict")
-        if not isinstance(fields, (types.ListType, types.NoneType)):
+        if not isinstance(fields, (list, type(None))):
             raise TypeError("fields must be an instance of list")
-        if not isinstance(skip, types.IntType):
+        if not isinstance(skip, int):
             raise TypeError("skip must be an instance of int")
-        if not isinstance(limit, types.IntType):
+        if not isinstance(limit, int):
             raise TypeError("limit must be an instance of int")
-        if not isinstance(slave_okay, types.BooleanType):
+        if not isinstance(slave_okay, bool):
             raise TypeError("slave_okay must be an instance of bool")
-        if not isinstance(timeout, types.BooleanType):
+        if not isinstance(timeout, bool):
             raise TypeError("timeout must be an instance of bool")
-        if not isinstance(snapshot, types.BooleanType):
+        if not isinstance(snapshot, bool):
             raise TypeError("snapshot must be an instance of bool")
-        if not isinstance(tailable, types.BooleanType):
+        if not isinstance(tailable, bool):
             raise TypeError("tailable must be an instance of bool")
 
         if fields is not None:
@@ -463,7 +463,7 @@ class Collection(object):
     def _gen_index_name(self, keys):
         """Generate an index name from the set of fields it is over.
         """
-        return u"_".join([u"%s_%s" % item for item in keys])
+        return "_".join(["%s_%s" % item for item in keys])
 
     def create_index(self, key_or_list, direction=None, unique=False, ttl=300):
         """Creates an index on this collection.
@@ -483,7 +483,7 @@ class Collection(object):
             will be recognized by subsequent calls to :meth:`ensure_index` -
             see documentation for :meth:`ensure_index` for details
         """
-        if not isinstance(key_or_list, (str, unicode, list)):
+        if not isinstance(key_or_list, (str, list)):
             raise TypeError("key_or_list must either be a single key or a list of (key, direction) pairs")
 
         if direction is not None:
@@ -541,7 +541,7 @@ class Collection(object):
           - `ttl` (optional): time window (in seconds) during which this index
             will be recognized by subsequent calls to :meth:`ensure_index`
         """
-        if not isinstance(key_or_list, (str, unicode, list)):
+        if not isinstance(key_or_list, (str, list)):
             raise TypeError("key_or_list must either be a single key or a list of (key, direction) pairs")
 
         if direction is not None:
@@ -565,7 +565,7 @@ class Collection(object):
         """
         self.__database.connection._purge_index(self.__database.name,
                                                 self.__name)
-        self.drop_index(u"*")
+        self.drop_index("*")
 
     def drop_index(self, index_or_name):
         """Drops the specified index on this collection.
@@ -581,10 +581,10 @@ class Collection(object):
           - `index_or_name`: index (or name of index) to drop
         """
         name = index_or_name
-        if isinstance(index_or_name, types.ListType):
+        if isinstance(index_or_name, list):
             name = self._gen_index_name(index_or_name)
 
-        if not isinstance(name, types.StringTypes):
+        if not isinstance(name, str):
             raise TypeError("index_or_name must be an index name or list")
 
         self.__database.connection._purge_index(self.__database.name,
@@ -604,7 +604,7 @@ class Collection(object):
         raw = self.__database.system.indexes.find({"ns": self.__full_name})
         info = {}
         for index in raw:
-            info[index["name"]] = index["key"].items()
+            info[index["name"]] = list(index["key"].items())
         return info
 
     def options(self):
@@ -666,7 +666,7 @@ class Collection(object):
                           DeprecationWarning)
 
         group = {}
-        if isinstance(key, basestring):
+        if isinstance(key, str):
             group["$keyf"] = Code(key)
         elif key is not None:
             group = {"key": self._fields_list_to_dict(key)}
@@ -690,7 +690,7 @@ class Collection(object):
         :Parameters:
           - `new_name`: new name for this collection
         """
-        if not isinstance(new_name, types.StringTypes):
+        if not isinstance(new_name, str):
             raise TypeError("new_name must be an instance of (str, unicode)")
 
         if not new_name or ".." in new_name:
@@ -764,7 +764,7 @@ class Collection(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         raise TypeError("'Collection' object is not iterable")
 
     def __call__(self, *args, **kwargs):

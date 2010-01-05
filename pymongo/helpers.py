@@ -18,9 +18,9 @@ import sys
 import struct
 import warnings
 
-from son import SON
-from errors import OperationFailure, AutoReconnect
-import bson
+from .son import SON
+from .errors import OperationFailure, AutoReconnect
+from . import bson
 import pymongo
 
 def _index_list(key_or_list, direction=None):
@@ -31,7 +31,7 @@ def _index_list(key_or_list, direction=None):
     if direction is not None:
         return [(key_or_list, direction)]
     else:
-        if isinstance(key_or_list, (str, unicode)):
+        if isinstance(key_or_list, str):
             return [(key_or_list, pymongo.ASCENDING)]
         return key_or_list
 
@@ -49,7 +49,7 @@ def _index_document(index_list):
 
     index = SON()
     for (key, value) in index_list:
-        if not isinstance(key, (str, unicode)):
+        if not isinstance(key, str):
             raise TypeError("first item in each key pair must be a string")
         if not isinstance(value, int):
             raise TypeError("second item in each key pair must be ASCENDING or "

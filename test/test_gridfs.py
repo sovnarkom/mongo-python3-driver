@@ -21,7 +21,7 @@ import sys
 sys.path[0:0] = [""]
 
 import gridfs
-from test_connection import get_connection
+from .test_connection import get_connection
 
 
 class JustWrite(threading.Thread):
@@ -209,10 +209,10 @@ class TestGridfs(unittest.TestCase):
     # One option would be to use eval and skip the test if it is a syntax
     # error.
     if sys.version_info[:2] == (2, 5):
-        import gridfs15
+        from . import gridfs15
         test_with_statement = gridfs15.test_with_statement
     elif sys.version_info[:3] >= (2, 6, 0):
-        import gridfs16
+        from . import gridfs16
         test_with_statement = gridfs16.test_with_statement
 
 if __name__ == "__main__":

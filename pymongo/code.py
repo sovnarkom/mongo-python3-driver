@@ -29,7 +29,7 @@ class Code(str):
     """
 
     def __new__(cls, code, scope=None):
-        if not isinstance(code, basestring):
+        if not isinstance(code, str):
             raise TypeError("code must be an instance of basestring")
 
         if scope is None:

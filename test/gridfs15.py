@@ -15,7 +15,7 @@
 """Some tests for the gridfs package that only work under Python >= 1.5.
 """
 
-from __future__ import with_statement
+
 
 def test_with_statement(test):
     with test.fs.open("test", "w") as f:

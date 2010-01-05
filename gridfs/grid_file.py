@@ -20,16 +20,16 @@ import math
 import os
 from threading import Condition
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except:
-    from StringIO import StringIO
+    from io import StringIO
 
 from pymongo.son import SON
 from pymongo.database import Database
 from pymongo.objectid import ObjectId
 from pymongo.dbref import DBRef
 from pymongo.binary import Binary
-from errors import CorruptGridFile
+from .errors import CorruptGridFile
 from pymongo import ASCENDING
 
 try:
@@ -95,13 +95,13 @@ class GridFile(object):
           - `collection` (optional): the collection in which to store/retrieve
             this file
         """
-        if not isinstance(file_spec, types.DictType):
+        if not isinstance(file_spec, dict):
             raise TypeError("file_spec must be an instance of (dict, SON)")
         if not isinstance(database, Database):
             raise TypeError("database must be an instance of database")
-        if not isinstance(collection, types.StringTypes):
+        if not isinstance(collection, str):
             raise TypeError("collection must be an instance of (str, unicode)")
-        if not isinstance(mode, types.StringTypes):
+        if not isinstance(mode, str):
             raise TypeError("mode must be an instance of (str, unicode)")
         if mode not in ("r", "w"):
             raise ValueError("mode must be one of ('r', 'w')")
@@ -311,7 +311,7 @@ class GridFile(object):
         """
         self.__assert_open("w")
 
-        if not isinstance(str, types.StringType):
+        if not isinstance(str, bytes):
             raise TypeError("can only write strings")
 
         while str:

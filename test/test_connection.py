@@ -96,8 +96,8 @@ class TestConnection(unittest.TestCase):
     def test_database_names(self):
         connection = Connection(self.host, self.port)
 
-        connection.pymongo_test.test.save({"dummy": u"object"})
-        connection.pymongo_test_mike.test.save({"dummy": u"object"})
+        connection.pymongo_test.test.save({"dummy": "object"})
+        connection.pymongo_test_mike.test.save({"dummy": "object"})
 
         dbs = connection.database_names()
         self.assert_("pymongo_test" in dbs)
@@ -109,14 +109,14 @@ class TestConnection(unittest.TestCase):
         self.assertRaises(TypeError, connection.drop_database, 5)
         self.assertRaises(TypeError, connection.drop_database, None)
 
-        connection.pymongo_test.test.save({"dummy": u"object"})
+        connection.pymongo_test.test.save({"dummy": "object"})
         dbs = connection.database_names()
         self.assert_("pymongo_test" in dbs)
         connection.drop_database("pymongo_test")
         dbs = connection.database_names()
         self.assert_("pymongo_test" not in dbs)
 
-        connection.pymongo_test.test.save({"dummy": u"object"})
+        connection.pymongo_test.test.save({"dummy": "object"})
         dbs = connection.database_names()
         self.assert_("pymongo_test" in dbs)
         connection.drop_database(connection.pymongo_test)

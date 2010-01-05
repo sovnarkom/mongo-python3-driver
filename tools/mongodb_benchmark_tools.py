@@ -1,6 +1,6 @@
 import os
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 try:
     import json
 except:
@@ -50,5 +50,5 @@ def post_data(data, machine_extra_info="", post_url="http://mongo-db.appspot.com
         }
     """
     data["machine"] = machine_info(machine_extra_info)
-    urllib2.urlopen(post_url, urllib.urlencode({"payload": json.dumps(data)}))
+    urllib.request.urlopen(post_url, urllib.urlencode({"payload": json.dumps(data)}))
     return data

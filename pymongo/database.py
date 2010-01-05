@@ -23,13 +23,13 @@ except: # for Python < 2.5
     import md5
     _md5func = md5.new
 
-from son import SON
-from dbref import DBRef
-from son_manipulator import ObjectIdInjector, ObjectIdShuffler
-from collection import Collection
-from errors import InvalidName, CollectionInvalid, OperationFailure
-from code import Code
-import helpers
+from .son import SON
+from .dbref import DBRef
+from .son_manipulator import ObjectIdInjector, ObjectIdShuffler
+from .collection import Collection
+from .errors import InvalidName, CollectionInvalid, OperationFailure
+from .code import Code
+from . import helpers
 
 
 class Database(object):
@@ -46,12 +46,12 @@ class Database(object):
           - `connection`: a connection to Mongo
           - `name`: database name
         """
-        if not isinstance(name, types.StringTypes):
+        if not isinstance(name, str):
             raise TypeError("name must be an instance of (str, unicode)")
 
         self.__check_name(name)
 
-        self.__name = unicode(name)
+        self.__name = str(name)
         self.__connection = connection
         # TODO remove the callable_value wrappers after deprecation is complete
         self.__name_w = helpers.callable_value(self.__name, "Database.name")
@@ -243,7 +243,7 @@ class Database(object):
         if isinstance(name, Collection):
             name = name.name
 
-        if not isinstance(name, types.StringTypes):
+        if not isinstance(name, str):
             raise TypeError("name_or_collection must be an instance of "
                             "(Collection, str, unicode)")
 
@@ -252,7 +252,7 @@ class Database(object):
         if name not in self.collection_names():
             return
 
-        self.command({"drop": unicode(name)})
+        self.command({"drop": str(name)})
 
     def validate_collection(self, name_or_collection):
         """Validate a collection.
@@ -264,11 +264,11 @@ class Database(object):
         if isinstance(name, Collection):
             name = name.name
 
-        if not isinstance(name, types.StringTypes):
+        if not isinstance(name, str):
             raise TypeError("name_or_collection must be an instance of "
                             "(Collection, str, unicode)")
 
-        result = self.command({"validate": unicode(name)})
+        result = self.command({"validate": str(name)})
 
         info = result["result"]
         if info.find("exception") != -1 or info.find("corrupt") != -1:
@@ -296,7 +296,7 @@ class Database(object):
         :Parameters:
           - `level`: the profiling level to use
         """
-        if not isinstance(level, types.IntType) or level < 0 or level > 2:
+        if not isinstance(level, int) or level < 0 or level > 2:
             raise ValueError("level must be one of (OFF, SLOW_ONLY, ALL)")
 
         self.command({"profile": level})
@@ -349,20 +349,20 @@ class Database(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         raise TypeError("'Database' object is not iterable")
 
     def _password_digest(self, username, password):
         """Get a password digest to use for authentication.
         """
-        if not isinstance(password, types.StringTypes):
+        if not isinstance(password, str):
             raise TypeError("password must be an instance of (str, unicode)")
-        if not isinstance(username, types.StringTypes):
+        if not isinstance(username, str):
             raise TypeError("username must be an instance of (str, unicode)")
 
         md5hash = _md5func()
         md5hash.update(username + ":mongo:" + password)
-        return unicode(md5hash.hexdigest())
+        return str(md5hash.hexdigest())
 
     def authenticate(self, name, password):
         """Authenticate to use this database.
@@ -380,20 +380,20 @@ class Database(object):
           - `name`: the name of the user to authenticate
           - `password`: the password of the user to authenticate
         """
-        if not isinstance(name, types.StringTypes):
+        if not isinstance(name, str):
             raise TypeError("name must be an instance of (str, unicode)")
-        if not isinstance(password, types.StringTypes):
+        if not isinstance(password, str):
             raise TypeError("password must be an instance of (str, unicode)")
 
         result = self.command({"getnonce": 1})
         nonce = result["nonce"]
         digest = self._password_digest(name, password)
         md5hash = _md5func()
-        md5hash.update("%s%s%s" % (nonce, unicode(name), digest))
-        key = unicode(md5hash.hexdigest())
+        md5hash.update("%s%s%s" % (nonce, str(name), digest))
+        key = str(md5hash.hexdigest())
         try:
             result = self.command(SON([("authenticate", 1),
-                                       ("user", unicode(name)),
+                                       ("user", str(name)),
                                        ("nonce", nonce),
                                        ("key", key)]))
             return True

@@ -28,8 +28,8 @@ from pymongo.cursor import Cursor
 from pymongo.database import Database
 from pymongo.code import Code
 from pymongo import ASCENDING, DESCENDING
-from test_connection import get_connection
-import version
+from .test_connection import get_connection
+from . import version
 
 
 class TestCursor(unittest.TestCase):
@@ -206,20 +206,20 @@ class TestCursor(unittest.TestCase):
 
         db.test.remove({})
 
-        unsort = range(10)
+        unsort = list(range(10))
         random.shuffle(unsort)
 
         for i in unsort:
             db.test.save({"x": i})
 
         asc = [i["x"] for i in db.test.find().sort("x", ASCENDING)]
-        self.assertEqual(asc, range(10))
+        self.assertEqual(asc, list(range(10)))
         asc = [i["x"] for i in db.test.find().sort("x")]
-        self.assertEqual(asc, range(10))
+        self.assertEqual(asc, list(range(10)))
         asc = [i["x"] for i in db.test.find().sort([("x", ASCENDING)])]
-        self.assertEqual(asc, range(10))
+        self.assertEqual(asc, list(range(10)))
 
-        expect = range(10)
+        expect = list(range(10))
         expect.reverse()
         desc = [i["x"] for i in db.test.find().sort("x", DESCENDING)]
         self.assertEqual(desc, expect)
@@ -258,7 +258,7 @@ class TestCursor(unittest.TestCase):
             db.test.save({"x": i})
 
         self.assertEqual(10, db.test.find().count())
-        self.assert_(isinstance(db.test.find().count(), types.IntType))
+        self.assert_(isinstance(db.test.find().count(), int))
         self.assertEqual(10, db.test.find().limit(5).count())
         self.assertEqual(10, db.test.find().skip(5).count())
 
@@ -294,7 +294,7 @@ class TestCursor(unittest.TestCase):
 
         self.assertEqual(3, db.test.find().where('this.x < 3').count())
         self.assertEqual(10, db.test.find().count())
-        self.assertEqual(3, db.test.find().where(u'this.x < 3').count())
+        self.assertEqual(3, db.test.find().where('this.x < 3').count())
         self.assertEqual([0, 1, 2],
                          [a["x"] for a in
                           db.test.find().where('this.x < 3')])
@@ -473,38 +473,38 @@ class TestCursor(unittest.TestCase):
         self.assertRaises(IndexError, lambda: self.db.test.find()[-1:])
         self.assertRaises(IndexError, lambda: self.db.test.find()[1:2:2])
 
-        for a, b in izip(count(0), self.db.test.find()):
+        for a, b in zip(count(0), self.db.test.find()):
             self.assertEqual(a, b['i'])
 
         self.assertEqual(100, len(list(self.db.test.find()[0:])))
-        for a, b in izip(count(0), self.db.test.find()[0:]):
+        for a, b in zip(count(0), self.db.test.find()[0:]):
             self.assertEqual(a, b['i'])
 
         self.assertEqual(80, len(list(self.db.test.find()[20:])))
-        for a, b in izip(count(20), self.db.test.find()[20:]):
+        for a, b in zip(count(20), self.db.test.find()[20:]):
             self.assertEqual(a, b['i'])
 
-        for a, b in izip(count(99), self.db.test.find()[99:]):
+        for a, b in zip(count(99), self.db.test.find()[99:]):
             self.assertEqual(a, b['i'])
 
         for i in self.db.test.find()[1000:]:
             self.fail()
 
         self.assertEqual(5, len(list(self.db.test.find()[20:25])))
-        self.assertEqual(5, len(list(self.db.test.find()[20L:25L])))
-        for a, b in izip(count(20), self.db.test.find()[20:25]):
+        self.assertEqual(5, len(list(self.db.test.find()[20:25])))
+        for a, b in zip(count(20), self.db.test.find()[20:25]):
             self.assertEqual(a, b['i'])
 
         self.assertEqual(80, len(list(self.db.test.find()[40:45][20:])))
-        for a, b in izip(count(20), self.db.test.find()[40:45][20:]):
+        for a, b in zip(count(20), self.db.test.find()[40:45][20:]):
             self.assertEqual(a, b['i'])
 
         self.assertEqual(80, len(list(self.db.test.find()[40:45].limit(0).skip(20))))
-        for a, b in izip(count(20), self.db.test.find()[40:45].limit(0).skip(20)):
+        for a, b in zip(count(20), self.db.test.find()[40:45].limit(0).skip(20)):
             self.assertEqual(a, b['i'])
 
         self.assertEqual(80, len(list(self.db.test.find().limit(10).skip(40)[20:])))
-        for a, b in izip(count(20), self.db.test.find().limit(10).skip(40)[20:]):
+        for a, b in zip(count(20), self.db.test.find().limit(10).skip(40)[20:]):
             self.assertEqual(a, b['i'])
 
         self.assertEqual(1, len(list(self.db.test.find()[:1])))
@@ -526,7 +526,7 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(50, self.db.test.find()[50]['i'])
         self.assertEqual(50, self.db.test.find().skip(50)[0]['i'])
         self.assertEqual(50, self.db.test.find().skip(49)[1]['i'])
-        self.assertEqual(50, self.db.test.find()[50L]['i'])
+        self.assertEqual(50, self.db.test.find()[50]['i'])
         self.assertEqual(99, self.db.test.find()[99]['i'])
 
         self.assertRaises(IndexError, lambda x: self.db.test.find()[x], -1)

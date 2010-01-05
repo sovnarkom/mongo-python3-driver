@@ -19,13 +19,13 @@ import unittest
 import sys
 sys.path[0:0] = [""]
 
-import qcheck
+from . import qcheck
 from pymongo.objectid import ObjectId
 from pymongo.son import SON
 from pymongo.son_manipulator import SONManipulator, ObjectIdInjector
 from pymongo.son_manipulator import NamespaceInjector, ObjectIdShuffler
 from pymongo.database import Database
-from test_connection import get_connection
+from .test_connection import get_connection
 
 
 class TestSONManipulator(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestSONManipulator(unittest.TestCase):
             son = manip.transform_incoming(son_in, collection)
             if not "_id" in son:
                 return True
-            for (k, v) in son.items():
+            for (k, v) in list(son.items()):
                 self.assertEqual(k, "_id")
                 break
             return son_in == son

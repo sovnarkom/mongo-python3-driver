@@ -37,15 +37,15 @@ def run(case, function):
     start = datetime.datetime.now()
     for _ in range(trials):
        result = function(case)
-    print "took: %s" % (datetime.datetime.now() - start)
+    print("took: %s" % (datetime.datetime.now() - start))
     return result
 
 def main():
     test_cases = [{},
                   {"hello": "world"},
                   {"hello": "world",
-                   "mike": u"something",
-                   "here's": u"an\u8744other"},
+                   "mike": "something",
+                   "here's": "an\u8744other"},
                   {"int": 200,
                    "bool": True,
                    "an int": 20,
@@ -56,14 +56,14 @@ def main():
                    "object": None}]
 
     for case in test_cases:
-        print "case: %r" % case
-        print "enc bson",
+        print("case: %r" % case)
+        print("enc bson", end=' ')
         enc_bson = run(case, bson.BSON.from_dict)
-        print "enc json",
+        print("enc json", end=' ')
         enc_json = run(case, json.dumps)
-        print "dec bson",
+        print("dec bson", end=' ')
         assert case == run(enc_bson, bson._to_dict)
-        print "dec json",
+        print("dec json", end=' ')
         assert case == run(enc_json, json.loads)
 
 if __name__ == "__main__":

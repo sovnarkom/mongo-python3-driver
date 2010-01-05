@@ -18,11 +18,11 @@ import types
 import struct
 import warnings
 
-import helpers
-import message
-from son import SON
-from code import Code
-from errors import InvalidOperation, OperationFailure, AutoReconnect
+from . import helpers
+from . import message
+from .son import SON
+from .code import Code
+from .errors import InvalidOperation, OperationFailure, AutoReconnect
 
 _QUERY_OPTIONS = {
     "tailable_cursor": 2,
@@ -167,7 +167,7 @@ class Cursor(object):
         :Parameters:
           - `limit`: the number of results to return
         """
-        if not isinstance(limit, types.IntType):
+        if not isinstance(limit, int):
             raise TypeError("limit must be an int")
         self.__check_okay_to_chain()
 
@@ -184,7 +184,7 @@ class Cursor(object):
         :Parameters:
           - `skip`: the number of results to skip
         """
-        if not isinstance(skip, (types.IntType, types.LongType)):
+        if not isinstance(skip, int):
             raise TypeError("skip must be an int")
         self.__check_okay_to_chain()
 
@@ -221,7 +221,7 @@ class Cursor(object):
           - `index`: An integer or slice index to be applied to this cursor
         """
         self.__check_okay_to_chain()
-        if isinstance(index, types.SliceType):
+        if isinstance(index, slice):
             if index.step is not None:
                 raise IndexError("Cursor instances do not support slice steps")
 
@@ -242,7 +242,7 @@ class Cursor(object):
             self.__limit = limit
             return self
 
-        if isinstance(index, (types.IntType, types.LongType)):
+        if isinstance(index, int):
             if index < 0:
                 raise IndexError("Cursor instances do not support negative indices")
             clone = self.clone()
@@ -328,7 +328,7 @@ class Cursor(object):
 
         .. versionadded:: 1.2
         """
-        if not isinstance(key, types.StringTypes):
+        if not isinstance(key, str):
             raise TypeError("key must be an instance of (str, unicode)")
 
         command = SON([("distinct", self.__collection.name), ("key", key)])
@@ -347,7 +347,7 @@ class Cursor(object):
         # always use a hard limit for explains
         if c.__limit:
             c.__limit = -abs(c.__limit)
-        return c.next()
+        return next(c)
 
     def hint(self, index):
         """Adds a 'hint', telling Mongo the proper index to use for the query.
@@ -375,7 +375,7 @@ class Cursor(object):
             self.__hint = None
             return self
 
-        if not isinstance(index, (types.ListType)):
+        if not isinstance(index, (list)):
             raise TypeError("hint takes a list specifying an index")
         self.__hint = helpers._index_document(index)
         return self
@@ -415,7 +415,7 @@ class Cursor(object):
         response = db.connection._send_message_with_response(message,
                                                              **kwargs)
 
-        if isinstance(response, types.TupleType):
+        if isinstance(response, tuple):
             (connection_id, response) = response
         else:
             connection_id = None
@@ -477,7 +477,7 @@ class Cursor(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         db = self.__collection.database
         if len(self.__data) or self._refresh():
             next = db._fix_outgoing(self.__data.pop(0), self.__collection)

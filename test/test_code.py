@@ -30,11 +30,11 @@ class TestCode(unittest.TestCase):
         self.assertRaises(TypeError, Code, 5)
         self.assertRaises(TypeError, Code, None)
         self.assertRaises(TypeError, Code, "aoeu", 5)
-        self.assertRaises(TypeError, Code, u"aoeu", 5)
+        self.assertRaises(TypeError, Code, "aoeu", 5)
         self.assert_(Code("aoeu"))
-        self.assert_(Code(u"aoeu"))
+        self.assert_(Code("aoeu"))
         self.assert_(Code("aoeu", {}))
-        self.assert_(Code(u"aoeu", {}))
+        self.assert_(Code("aoeu", {}))
 
     def test_read_only(self):
         c = Code("blah")

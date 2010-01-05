@@ -37,9 +37,9 @@ class Binary(str):
     """
 
     def __new__(cls, data, subtype=2):
-        if not isinstance(data, types.StringType):
+        if not isinstance(data, bytes):
             raise TypeError("data must be an instance of str")
-        if not isinstance(subtype, types.IntType):
+        if not isinstance(subtype, int):
             raise TypeError("subtype must be an instance of int")
         if subtype >= 256 or subtype < 0:
             raise ValueError("subtype must be contained in [0, 256)")

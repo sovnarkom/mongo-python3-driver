@@ -42,8 +42,8 @@ import datetime
 import calendar
 import re
 
-from objectid import ObjectId
-from dbref import DBRef
+from .objectid import ObjectId
+from .dbref import DBRef
 
 # TODO support Binary and Code
 # Binary and Code are tricky because they subclass str so json thinks it can

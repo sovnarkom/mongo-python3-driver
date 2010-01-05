@@ -66,15 +66,15 @@ class doc(Command):
             if status:
                 raise RuntimeError("documentation step '%s' failed" % mode)
 
-            print ""
-            print "Documentation step '%s' performed, results here:" % mode
-            print "   %s/" % path
+            print("")
+            print("Documentation step '%s' performed, results here:" % mode)
+            print("   %s/" % path)
         else:
-            print """
+            print("""
 `setup.py doc` is not supported for this version of Python.
 
 Please ask in the user forums for help.
-"""
+""")
 
 
 if sys.platform == 'win32' and sys.version_info > (2, 6):
@@ -105,24 +105,24 @@ although they do result in significant speed improvements.
     def run(self):
         try:
             build_ext.run(self)
-        except DistutilsPlatformError, e:
-            print e
-            print self.warning_message % ("Extension modules",
+        except DistutilsPlatformError as e:
+            print(e)
+            print(self.warning_message % ("Extension modules",
                                           "There was an issue with your "
-                                          "platform configuration - see above.")
+                                          "platform configuration - see above."))
 
     def build_extension(self, ext):
         if sys.version_info[:3] >= (2, 4, 0):
             try:
                 build_ext.build_extension(self, ext)
             except build_errors:
-                print self.warning_message % ("The %s extension module" % ext.name,
+                print(self.warning_message % ("The %s extension module" % ext.name,
                                               "Above is the ouput showing how "
-                                              "the compilation failed.")
+                                              "the compilation failed."))
         else:
-            print self.warning_message % ("The %s extension module" % ext.name,
+            print(self.warning_message % ("The %s extension module" % ext.name,
                                           "Please use Python >= 2.4 to take "
-                                          "advantage of the extension.")
+                                          "advantage of the extension."))
 
 c_ext = Feature(
     "optional C extension",

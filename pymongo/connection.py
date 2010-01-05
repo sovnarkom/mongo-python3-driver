@@ -43,14 +43,14 @@ import random
 import errno
 import datetime
 
-from errors import ConnectionFailure, ConfigurationError, AutoReconnect
-from errors import OperationFailure
-from database import Database
-from cursor_manager import CursorManager
-from thread_util import TimeoutableLock
-import bson
-import message
-import helpers
+from .errors import ConnectionFailure, ConfigurationError, AutoReconnect
+from .errors import OperationFailure
+from .database import Database
+from .cursor_manager import CursorManager
+from .thread_util import TimeoutableLock
+from . import bson
+from . import message
+from . import helpers
 
 _logger = logging.getLogger("pymongo.connection")
 _logger.addHandler(logging.StreamHandler())
@@ -126,11 +126,11 @@ class Connection(object): # TODO support auth for pooling
         if timeout == -1:
             timeout = None
 
-        if not isinstance(host, types.StringTypes):
+        if not isinstance(host, str):
             raise TypeError("host must be an instance of (str, unicode)")
-        if not isinstance(port, types.IntType):
+        if not isinstance(port, int):
             raise TypeError("port must be an instance of int")
-        if not isinstance(pool_size, types.IntType):
+        if not isinstance(pool_size, int):
             raise TypeError("pool_size must be an instance of int")
         if pool_size <= 0:
             raise ValueError("pool_size must be positive")
@@ -174,9 +174,9 @@ class Connection(object): # TODO support auth for pooling
             pair with
           - `port`: the port number on which to connect
         """
-        if not isinstance(host, types.StringType):
+        if not isinstance(host, bytes):
             raise TypeError("host must be an instance of str")
-        if not isinstance(port, types.IntType):
+        if not isinstance(port, int):
             raise TypeError("port must be an instance of int")
         self.__nodes.append((host, port))
 
@@ -332,7 +332,7 @@ class Connection(object): # TODO support auth for pooling
                     sock.settimeout(self.__network_timeout)
                     try:
                         master = self.__master(sock)
-                    except ConnectionFailure, e:
+                    except ConnectionFailure as e:
                         raise AutoReconnect(str(e))
                     if master is True:
                         self.__host = host
@@ -356,7 +356,7 @@ class Connection(object): # TODO support auth for pooling
                             "but that's not configured" %
                             ((host, port), master))
                     _logger.debug("not master, master is (%r, %r)" % master)
-                except socket.error, e:
+                except socket.error as e:
                     exctype, value = sys.exc_info()[:2]
                     _logger.debug("could not connect, got: %s %s" %
                                   (exctype, value))
@@ -445,7 +445,7 @@ class Connection(object): # TODO support auth for pooling
     def __pick_and_acquire_socket(self):
         """Acquire a socket to use for synchronous send and receive operations.
         """
-        choices = range(self.__pool_size)
+        choices = list(range(self.__pool_size))
         random.shuffle(choices)
         choices.sort(lambda x, y: cmp(self.__thread_count[x],
                                       self.__thread_count[y]))
@@ -476,7 +476,7 @@ class Connection(object): # TODO support auth for pooling
         try:
             if not self.__sockets[sock]:
                 self.__connect(sock)
-        except ConnectionFailure, e:
+        except ConnectionFailure as e:
             self.__sockets[sock].close()
             self.__sockets[sock] = None
             raise AutoReconnect(str(e))
@@ -493,7 +493,7 @@ class Connection(object): # TODO support auth for pooling
         while total_sent < len(data):
             try:
                 sent = sock.send(data[total_sent:])
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.EAGAIN:
                     continue
                 raise ConnectionFailure("connection closed, resetting")
@@ -544,7 +544,7 @@ class Connection(object): # TODO support auth for pooling
                 if with_last_error:
                     response = self.__receive_message_on_socket(1, request_id, sock)
                     self.__check_response_to_last_error(response)
-            except ConnectionFailure, e:
+            except ConnectionFailure as e:
                 self.__sockets[sock_number].close()
                 self.__sockets[sock_number] = None
                 raise AutoReconnect(str(e))
@@ -561,7 +561,7 @@ class Connection(object): # TODO support auth for pooling
         while len(message) < length:
             try:
                 chunk = sock.recv(length - len(message))
-            except socket.error, e:
+            except socket.error as e:
                 raise ConnectionFailure(e)
             if chunk == "":
                 raise ConnectionFailure("connection closed")
@@ -614,7 +614,7 @@ class Connection(object): # TODO support auth for pooling
         try:
             try:
                 return self.__send_and_receive(message, sock)
-            except ConnectionFailure, e:
+            except ConnectionFailure as e:
                 self.__sockets[sock_number].close()
                 self.__sockets[sock_number] = None
                 raise AutoReconnect(str(e))
@@ -715,7 +715,7 @@ class Connection(object): # TODO support auth for pooling
         .. seealso:: :meth:`set_cursor_manager` and
            the :mod:`~pymongo.cursor_manager` module
         """
-        if not isinstance(cursor_id, (types.IntType, types.LongType)):
+        if not isinstance(cursor_id, int):
             raise TypeError("cursor_id must be an instance of (int, long)")
 
         self.__cursor_manager.close(cursor_id)
@@ -729,7 +729,7 @@ class Connection(object): # TODO support auth for pooling
         :Parameters:
           - `cursor_ids`: list of cursor ids to kill
         """
-        if not isinstance(cursor_ids, types.ListType):
+        if not isinstance(cursor_ids, list):
             raise TypeError("cursor_ids must be a list")
         return self._send_message(message.kill_cursors(cursor_ids))
 
@@ -748,7 +748,7 @@ class Connection(object): # TODO support auth for pooling
     def database_names(self):
         """Get a list of the names of all databases on the connected server.
         """
-        return self.__database_info().keys()
+        return list(self.__database_info().keys())
 
     def drop_database(self, name_or_database):
         """Drop a database.
@@ -765,7 +765,7 @@ class Connection(object): # TODO support auth for pooling
         if isinstance(name, Database):
             name = name.name
 
-        if not isinstance(name, types.StringTypes):
+        if not isinstance(name, str):
             raise TypeError("name_or_database must be an instance of "
                             "(Database, str, unicode)")
 
@@ -775,5 +775,5 @@ class Connection(object): # TODO support auth for pooling
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         raise TypeError("'Connection' object is not iterable")

@@ -20,9 +20,9 @@ installed on a database by calling
 
 import types
 
-from objectid import ObjectId
-from dbref import DBRef
-from son import SON
+from .objectid import ObjectId
+from .dbref import DBRef
+from .son import SON
 
 
 class SONManipulator(object):
@@ -136,17 +136,17 @@ class AutoReference(SONManipulator):
         """
 
         def transform_value(value):
-            if isinstance(value, types.DictType):
+            if isinstance(value, dict):
                 if "_id" in value and "_ns" in value:
                     return DBRef(value["_ns"], transform_value(value["_id"]))
                 else:
                     return transform_dict(SON(value))
-            elif isinstance(value, types.ListType):
+            elif isinstance(value, list):
                 return [transform_value(v) for v in value]
             return value
 
         def transform_dict(object):
-            for (key, value) in object.items():
+            for (key, value) in list(object.items()):
                 object[key] = transform_value(value)
             return object
 
@@ -159,14 +159,14 @@ class AutoReference(SONManipulator):
         def transform_value(value):
             if isinstance(value, DBRef):
                 return self.__database.dereference(value)
-            elif isinstance(value, types.ListType):
+            elif isinstance(value, list):
                 return [transform_value(v) for v in value]
-            elif isinstance(value, types.DictType):
+            elif isinstance(value, dict):
                 return transform_dict(SON(value))
             return value
 
         def transform_dict(object):
-            for (key, value) in object.items():
+            for (key, value) in list(object.items()):
                 object[key] = transform_value(value)
             return object
 
