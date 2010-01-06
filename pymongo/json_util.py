@@ -66,6 +66,8 @@ def object_hook(dct):
         flags = 0
         if "i" in dct["$options"]:
             flags |= re.IGNORECASE
+        if "u" in dct["$options"]:
+            flags |= re.UNICODE
         if "m" in dct["$options"]:
             flags |= re.MULTILINE
         return re.compile(dct["$regex"], flags)
@@ -85,8 +87,10 @@ def default(obj):
         flags = ""
         if obj.flags & re.IGNORECASE:
             flags += "i"
+        if obj.flags & re.UNICODE:
+            flags += "u"
         if obj.flags & re.MULTILINE:
             flags += "m"
         return {"$regex": obj.pattern,
                 "$options": flags}
-    raise TypeError("%r is not JSON serializable" % obj)
+    raise TypeError("%r is not JSON serializable" % type(obj))

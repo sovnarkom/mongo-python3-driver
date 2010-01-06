@@ -19,15 +19,10 @@ import datetime
 import re
 import sys
 json_lib = True
-try:
-    import json
-except ImportError:
-    try:
-        import simplejson as json
-    except ImportError:
-        json_lib = False
+import json
 
-from nose.plugins.skip import SkipTest
+
+#from nose.plugins.skip import SkipTest
 
 sys.path[0:0] = [""]
 
@@ -42,6 +37,8 @@ class TestJsonUtil(unittest.TestCase):
             raise SkipTest()
 
     def round_tripped(self, doc):
+        s = json.loads(json.dumps(doc, default=default),
+                          object_hook=object_hook)
         return json.loads(json.dumps(doc, default=default),
                           object_hook=object_hook)
 
@@ -66,7 +63,7 @@ class TestJsonUtil(unittest.TestCase):
     def test_regex(self):
         res = self.round_tripped({"r": re.compile("a*b", re.IGNORECASE)})["r"]
         self.assertEqual("a*b", res.pattern)
-        self.assertEqual(re.IGNORECASE, res.flags)
+        self.assertEqual(re.I | re.U, res.flags)
 
 
 if __name__ == "__main__":
