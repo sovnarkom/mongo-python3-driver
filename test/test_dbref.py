@@ -61,7 +61,7 @@ class TestDBRef(unittest.TestCase):
         self.assertEqual(repr(DBRef("coll", ObjectId("1234567890abcdef12345678"))),
                          "DBRef('coll', ObjectId('1234567890abcdef12345678'))")
         self.assertEqual(repr(DBRef("coll", ObjectId("1234567890abcdef12345678"))),
-                         "DBRef(u'coll', ObjectId('1234567890abcdef12345678'))")
+                         "DBRef('coll', ObjectId('1234567890abcdef12345678'))")
         self.assertEqual(repr(DBRef("coll", ObjectId("1234567890abcdef12345678"), "foo")),
                          "DBRef('coll', ObjectId('1234567890abcdef12345678'), 'foo')")
 
