@@ -21,11 +21,11 @@ import time
 import sys
 sys.path[0:0] = [""]
 
-from nose.plugins.skip import SkipTest
+#from nose.plugins.skip import SkipTest
 
-from . import qcheck
-from .test_connection import get_connection
-from . import version
+import qcheck
+from test_connection import get_connection
+import version
 from pymongo.objectid import ObjectId
 from pymongo.code import Code
 from pymongo.binary import Binary
@@ -243,31 +243,31 @@ class TestCollection(unittest.TestCase):
 
         doc = {"a": 1, "b": 5, "c": {"d": 5, "e": 10}}
         db.test.insert(doc)
-
-        self.assertEqual(list(db.test.find({}, ["_id"]).next().keys()), ["_id"])
-        l = list(db.test.find({}, ["a"]).next().keys())
+        
+        self.assertEqual(list(next(db.test.find({}, ["_id"])).keys()), ["_id"])
+        l = list(next(db.test.find({}, ["a"])))
         l.sort()
         self.assertEqual(l, ["_id", "a"])
-        l = list(db.test.find({}, ["b"]).next().keys())
+        l = list(next(db.test.find({}, ["b"])))
         l.sort()
         self.assertEqual(l, ["_id", "b"])
-        l = list(db.test.find({}, ["c"]).next().keys())
+        l = list(next(db.test.find({}, ["c"])))
         l.sort()
         self.assertEqual(l, ["_id", "c"])
-        self.assertEqual(db.test.find({}, ["a"]).next()["a"], 1)
-        self.assertEqual(db.test.find({}, ["b"]).next()["b"], 5)
-        self.assertEqual(db.test.find({}, ["c"]).next()["c"],
+        self.assertEqual(next(db.test.find({}, ["a"]))["a"], 1)
+        self.assertEqual(next(db.test.find({}, ["b"]))["b"], 5)
+        self.assertEqual(next(db.test.find({}, ["c"]))["c"],
                          {"d": 5, "e": 10})
 
-        self.assertEqual(db.test.find({}, ["c.d"]).next()["c"], {"d": 5})
-        self.assertEqual(db.test.find({}, ["c.e"]).next()["c"], {"e": 10})
-        self.assertEqual(db.test.find({}, ["b", "c.e"]).next()["c"],
+        self.assertEqual(next(db.test.find({}, ["c.d"]))["c"], {"d": 5})
+        self.assertEqual(next(db.test.find({}, ["c.e"]))["c"], {"e": 10})
+        self.assertEqual(next(db.test.find({}, ["b", "c.e"]))["c"],
                          {"e": 10})
 
-        l = list(db.test.find({}, ["b", "c.e"]).next().keys())
+        l = list(next(db.test.find({}, ["b", "c.e"])))
         l.sort()
         self.assertEqual(l, ["_id", "b", "c"])
-        self.assertEqual(db.test.find({}, ["b", "c.e"]).next()["b"], 5)
+        self.assertEqual(next(db.test.find({}, ["b", "c.e"]))["b"], 5)
 
     def test_options(self):
         db = self.db
@@ -297,6 +297,8 @@ class TestCollection(unittest.TestCase):
             db.test.remove({})
             db.test.insert(dict)
             return db.test.find_one() == dict
+        
+        a = qcheck.gen_mongo_dict(3)
 
         qcheck.check_unittest(self, remove_insert_find_one,
                               qcheck.gen_mongo_dict(3))
@@ -452,7 +454,7 @@ class TestCollection(unittest.TestCase):
         db.test.save({"hello": "world"})
         db.test.save({"hello": "mike"})
         db.test.save({"hello": "world"})
-        self.failIf(db.error())
+        self.assertFalse(db.error())
 
         db.drop_collection("test")
         db.test.create_index("hello", unique=True)
@@ -469,7 +471,7 @@ class TestCollection(unittest.TestCase):
         db.test.insert({"hello": {"a": 4, "b": 5}})
         db.test.insert({"hello": {"a": 7, "b": 2}})
         db.test.insert({"hello": {"a": 4, "b": 10}})
-        self.failIf(db.error())
+        self.assertFalse(db.error())
 
         db.drop_collection("test")
         db.test.create_index("hello.a", unique=True)

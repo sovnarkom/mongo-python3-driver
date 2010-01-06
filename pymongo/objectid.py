@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Tools for working with MongoDB `ObjectIds
 <http://www.mongodb.org/display/DOCS/Object+IDs>`_.
 """
@@ -25,6 +26,8 @@ import os
 import struct
 import hashlib
 _md5func = hashlib.md5
+
+from binascii import hexlify
 
 from .errors import InvalidId
 
@@ -153,15 +156,20 @@ class ObjectId(object):
     generation_time = property(generation_time)
 
     def __str__(self):
-        return self.__id.encode("hex")
+        return hexlify(self.__id).decode()
+
 
     def __repr__(self):
-        return "ObjectId('%s')" % self.__id.encode("hex")
+        return "ObjectId(%s)" % (hexlify(self.__id).decode())
 
-    def __cmp__(self, other):
+    def __ne__(self, other):
         if isinstance(other, ObjectId):
-            return cmp(self.__id, other.__id)
+            return self.__id != other.__id
         return NotImplemented
+
+    def __eq__(self, other):
+        return not self.__ne__(other)
+    
 
     def __hash__(self):
         """Get a hash value for this :class:`ObjectId`.

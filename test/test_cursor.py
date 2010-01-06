@@ -21,15 +21,15 @@ import sys
 import itertools
 sys.path[0:0] = [""]
 
-from nose.plugins.skip import SkipTest
+#from nose.plugins.skip import SkipTest
 
 from pymongo.errors import InvalidOperation, OperationFailure
 from pymongo.cursor import Cursor
 from pymongo.database import Database
 from pymongo.code import Code
 from pymongo import ASCENDING, DESCENDING
-from .test_connection import get_connection
-from . import version
+from test_connection import get_connection
+import version
 
 
 class TestCursor(unittest.TestCase):
@@ -96,7 +96,7 @@ class TestCursor(unittest.TestCase):
 
         warnings.simplefilter("error")
 
-        self.assertEqual(1, db.test.find().next()["x"])
+        self.assertEqual(1, next(db.test.find())["x"])
         self.assertRaises(DeprecationWarning, db.test.find, slave_okay=True)
         self.assertRaises(DeprecationWarning, db.test.find, slave_okay=False)
 
@@ -467,7 +467,6 @@ class TestCursor(unittest.TestCase):
         for i in range(100):
             self.db.test.save({"i": i})
 
-        izip = itertools.izip
         count = itertools.count
 
         self.assertRaises(IndexError, lambda: self.db.test.find()[-1:])

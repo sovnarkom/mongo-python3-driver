@@ -16,7 +16,6 @@ import random
 import traceback
 import datetime
 import re
-import types
 import sys
 from functools import reduce
 sys.path[0:0] = [""]
@@ -107,10 +106,8 @@ def gen_datetime():
 def gen_dict(gen_key, gen_value, gen_length):
 
     def a_dict(gen_key, gen_value, length):
-        result = {}
         for _ in range(length):
-            result[gen_key()] = gen_value()
-        return result
+            yield (gen_key(), gen_value())
     return lambda: a_dict(gen_key, gen_value, gen_length())
 
 
@@ -145,7 +142,7 @@ def gen_dbref():
 def gen_mongo_value(depth, ref):
     choices = [gen_unicode(gen_range(0, 50)),
                gen_printable_string(gen_range(0, 50)),
-               list(map(gen_string(gen_range(0, 1000)), Binary)),
+               map(gen_string(gen_range(0, 1000)), Binary),
                gen_int(),
                gen_float(),
                gen_boolean(),
@@ -165,9 +162,9 @@ def gen_mongo_list(depth, ref):
 
 
 def gen_mongo_dict(depth, ref=True):
-    return list(map(gen_dict(gen_unicode(gen_range(0, 20)),
+    return map(gen_dict(gen_unicode(gen_range(0, 20)),
                         gen_mongo_value(depth - 1, ref),
-                        gen_range(0, 10)), SON))
+                        gen_range(0, 10)), SON)
 
 
 def simplify(case): # TODO this is a hack
