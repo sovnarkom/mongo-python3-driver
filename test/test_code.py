@@ -46,8 +46,8 @@ class TestCode(unittest.TestCase):
     def test_code(self):
         a_string = "hello world"
         a_code = Code("hello world")
-        self.assert_(a_code.startswith("hello"))
-        self.assert_(a_code.endswith("world"))
+        self.assert_(a_code.startswith(b"hello"))
+        self.assert_(a_code.endswith(b"world"))
         self.assert_(isinstance(a_code, Code))
         self.failIf(isinstance(a_string, Code))
         self.assertEqual(a_code.scope, {})

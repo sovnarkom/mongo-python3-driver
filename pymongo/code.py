@@ -15,7 +15,7 @@
 """Tools for representing JavaScript code to be evaluated by MongoDB.
 """
 
-class Code(str):
+class Code(bytes):
     """JavaScript code to be evaluated by MongoDB.
 
     Raises TypeError if `code` is not an instance of (str, unicode) or
@@ -29,8 +29,11 @@ class Code(str):
     """
 
     def __new__(cls, code, scope=None):
-        if not isinstance(code, str):
-            raise TypeError("code must be an instance of basestring")
+        if not isinstance(code, str) and not isinstance(code, bytes):
+            raise TypeError("code must be an instance of string or bytes")
+        
+        if isinstance(code, str):
+            code = code.encode()
 
         if scope is None:
             try:
@@ -40,7 +43,7 @@ class Code(str):
         if not isinstance(scope, dict):
             raise TypeError("scope must be an instance of dict")
 
-        self = str.__new__(cls, code)
+        self = bytes.__new__(cls, code)
         self.__scope = scope
         return self
 
@@ -51,9 +54,12 @@ class Code(str):
     scope = property(scope)
 
     def __repr__(self):
-        return "Code(%s, %r)" % (str.__repr__(self), self.__scope)
+        return "Code(%s, %r)" % ((repr(self.decode()).encode('ascii', 'backslashreplace').decode()), self.__scope)
 
     def __eq__(self, other):
         if isinstance(other, Code):
-            return (self.__scope, str(self)) == (other.__scope, str(other))
+            return (self.__scope, bytes(self)) == (other.__scope, bytes(other))
         return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
