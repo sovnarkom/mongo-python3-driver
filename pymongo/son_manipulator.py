@@ -93,8 +93,12 @@ class ObjectIdShuffler(SONManipulator):
         """
         if not "_id" in son:
             return son
+        
+
         transformed = SON({"_id": son["_id"]})
+        
         transformed.update(son)
+        
         return transformed
 
 

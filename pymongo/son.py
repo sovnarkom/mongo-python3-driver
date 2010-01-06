@@ -36,8 +36,8 @@ class SON(OrderedDict):
     bool                                 boolean        both
     int                                  number (int)   both
     float                                number (real)  both
-    string                               string         py -> mongo
-    unicode                              string         both
+    bytes                                string         py -> mongo
+    string                               string         both
     list                                 array          both
     dict / `SON`                         object         both
     datetime.datetime [#dt]_ [#dt2]_     date           both
@@ -46,9 +46,9 @@ class SON(OrderedDict):
     `pymongo.objectid.ObjectId`          oid            both
     `pymongo.dbref.DBRef`                dbref          both
     None                                 undefined      mongo -> py
-    unicode                              code           mongo -> py
+    string                               code           mongo -> py
     `pymongo.code.Code`                  code           py -> mongo
-    unicode                              symbol         mongo -> py
+    string                               symbol         mongo -> py
     ===================================  =============  ===================
 
     Note that to save binary data it must be wrapped as an instance of
@@ -176,19 +176,14 @@ class SON(OrderedDict):
         except KeyError:
             return default
 
-    #def __cmp__(self, other):
-    #    if isinstance(other, SON):
-    #        return cmp((dict(iter(self.items())), list(self.keys())),
-    #                   (dict(iter(other.items())), list(other.keys())))
-    #    return cmp(dict(iter(self.items())), other)
-
-    def __eq__(self, other):
-        if isinstance(other, SON):
-            return (dict(iter(self.items())), list(self.keys())) == (dict(iter(other.items())), list(other.keys()))
-        return dict(iter(self.items())) == other
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        if isinstance(other, SON):
+            return (dict(iter(self.items())), list(self.keys())) != (dict(iter(other.items())), list(other.keys()))
+        return dict(iter(self.items())) != other
+
+    def __eq__(self, other):
+        return not self.__ne__(other)
 
     def __lt__(self, other):
         if isinstance(other, SON):
