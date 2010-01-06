@@ -134,7 +134,6 @@ class TestCollection(unittest.TestCase):
                          db.test.ensure_index("goodbye"))
         self.assertEqual(None, db.test.ensure_index("goodbye"))
 
-        db_name = self.db.name
         self.connection.drop_database(self.db.name)
         self.assertEqual("goodbye_1",
                          db.test.ensure_index("goodbye"))
@@ -298,8 +297,6 @@ class TestCollection(unittest.TestCase):
             db.test.insert(dict)
             return db.test.find_one() == dict
         
-        a = qcheck.gen_mongo_dict(3)
-
         qcheck.check_unittest(self, remove_insert_find_one,
                               qcheck.gen_mongo_dict(3))
 
@@ -431,12 +428,12 @@ class TestCollection(unittest.TestCase):
 
         db.drop_collection("test")
         self.assertEqual(db.test.find().count(), 0)
-        ids = db.test.insert(({"hello": "world"}, {"hello": "world"}))
+        db.test.insert(({"hello": "world"}, {"hello": "world"}))
         self.assertEqual(db.test.find().count(), 2)
 
         db.drop_collection("test")
         self.assertEqual(db.test.find().count(), 0)
-        ids = db.test.insert(map(lambda x: {"hello": "world"}, itertools.repeat(None, 10)))
+        db.test.insert(map(lambda x: {"hello": "world"}, itertools.repeat(None, 10)))
         self.assertEqual(db.test.find().count(), 10)
 
     def test_save(self):
