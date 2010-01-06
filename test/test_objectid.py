@@ -20,7 +20,7 @@ import unittest
 import sys
 sys.path[0:0] = [""]
 
-from nose.plugins.skip import SkipTest
+#from nose.plugins.skip import SkipTest
 
 from pymongo.objectid import ObjectId
 from pymongo.errors import InvalidId
@@ -65,8 +65,8 @@ class TestObjectId(unittest.TestCase):
                          "ObjectId('1234567890abcdef12345678')")
         self.assertEqual(str(ObjectId("1234567890abcdef12345678")), "1234567890abcdef12345678")
         self.assertEqual(str(ObjectId("123456789012")), "313233343536373839303132")
-        self.assertEqual(ObjectId("1234567890abcdef12345678").binary, '\x124Vx\x90\xab\xcd\xef\x124Vx')
-        self.assertEqual(str(ObjectId('\x124Vx\x90\xab\xcd\xef\x124Vx')), "1234567890abcdef12345678")
+        self.assertEqual(ObjectId("1234567890abcdef12345678").binary, b'\x124Vx\x90\xab\xcd\xef\x124Vx')
+        self.assertEqual(str(ObjectId(b'\x124Vx\x90\xab\xcd\xef\x124Vx')), "1234567890abcdef12345678")
 
     def test_cmp(self):
         a = ObjectId()

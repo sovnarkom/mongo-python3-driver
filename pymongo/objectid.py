@@ -27,7 +27,7 @@ import struct
 import hashlib
 _md5func = hashlib.md5
 
-from binascii import hexlify, unhexlify
+from binascii import hexlify, unhexlify, Error as binascii_Error
 
 from .errors import InvalidId
 
@@ -114,7 +114,7 @@ class ObjectId(object):
             elif len(oid) == 24:
                 try:
                     self.__id = unhexlify(oid)
-                except TypeError:
+                except binascii_Error:
                     raise InvalidId("%s is not a valid ObjectId" % oid)
             else:
                 raise InvalidId("%s is not a valid ObjectId" % oid)
