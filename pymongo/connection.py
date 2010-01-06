@@ -173,7 +173,7 @@ class Connection(object): # TODO support auth for pooling
             pair with
           - `port`: the port number on which to connect
         """
-        if not isinstance(host, bytes):
+        if not isinstance(host, str):
             raise TypeError("host must be an instance of str")
         if not isinstance(port, int):
             raise TypeError("port must be an instance of int")
