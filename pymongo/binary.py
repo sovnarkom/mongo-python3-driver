@@ -15,9 +15,6 @@
 """Tools for representing binary data to be stored in MongoDB.
 """
 
-import types
-
-
 class Binary(str):
     """Representation of binary data to be stored in or retrieved from MongoDB.
 
@@ -37,7 +34,7 @@ class Binary(str):
     """
 
     def __new__(cls, data, subtype=2):
-        if not isinstance(data, bytes):
+        if not isinstance(data, str):
             raise TypeError("data must be an instance of str")
         if not isinstance(subtype, int):
             raise TypeError("subtype must be an instance of int")
@@ -52,7 +49,7 @@ class Binary(str):
         """
         return self.__subtype
     subtype = property(subtype)
-
+    
     def __eq__(self, other):
         if isinstance(other, Binary):
             return (self.__subtype, str(self)) == (other.__subtype, str(other))
@@ -61,5 +58,15 @@ class Binary(str):
         # of str...
         return False
 
+    def __ne__(self, other):
+        if isinstance(other, Binary):
+            return (self.__subtype, str(self)) != (other.__subtype, str(other))
+        # We don't return NotImplemented here because if we did then
+        # Binary("foo") == "foo" would return True, since Binary is a subclass
+        # of str...
+        return True
+    
+    __hash__ = str.__hash__
+
     def __repr__(self):
-        return "Binary(%s, %s)" % (str.__repr__(self), self.__subtype)
+        return "Binary(%s, %s)" % ((repr(str(self)).encode('ascii', 'backslashreplace').decode('utf')), self.__subtype)

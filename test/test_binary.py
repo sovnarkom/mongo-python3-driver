@@ -20,7 +20,6 @@ sys.path[0:0] = [""]
 
 from pymongo.binary import Binary
 
-
 class TestBinary(unittest.TestCase):
 
     def setUp(self):
@@ -36,7 +35,7 @@ class TestBinary(unittest.TestCase):
 
     def test_exceptions(self):
         self.assertRaises(TypeError, Binary, None)
-        self.assertRaises(TypeError, Binary, "hello")
+        self.assertRaises(TypeError, Binary, b"hello")
         self.assertRaises(TypeError, Binary, 5)
         self.assertRaises(TypeError, Binary, 10.2)
         self.assertRaises(TypeError, Binary, "hello", None)
