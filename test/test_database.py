@@ -32,7 +32,7 @@ from pymongo.collection import Collection
 from pymongo.dbref import DBRef
 from pymongo.code import Code
 from pymongo.son_manipulator import AutoReference, NamespaceInjector
-from .test_connection import get_connection
+from test_connection import get_connection
 
 
 class TestDatabase(unittest.TestCase):
@@ -53,7 +53,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_repr(self):
         self.assertEqual(repr(Database(self.connection, "pymongo_test")),
-                         "Database(%r, u'pymongo_test')" % self.connection)
+                         "Database(%r, 'pymongo_test')" % self.connection)
 
     def test_get_coll(self):
         db = Database(self.connection, "pymongo_test")
