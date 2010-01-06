@@ -14,14 +14,9 @@
 
 """Database level operations."""
 
-import types
 import warnings
-try:
-    import hashlib
-    _md5func = hashlib.md5
-except: # for Python < 2.5
-    import md5
-    _md5func = md5.new
+import hashlib
+_md5func = hashlib.md5
 
 from .son import SON
 from .dbref import DBRef
@@ -115,11 +110,13 @@ class Database(object):
         return self.__name_w
     name = property(name)
 
-    def __cmp__(self, other):
+    def __ne__(self, other):
         if isinstance(other, Database):
-            return cmp((self.__connection, self.__name),
-                       (other.__connection, other.__name))
+            return (self.__connection, self.__name) != (other.__connection, other.__name)
         return NotImplemented
+
+    def __eq__(self, other):
+        return not self.__ne__(other)
 
     def __repr__(self):
         return "Database(%r, %r)" % (self.__connection, self.__name)

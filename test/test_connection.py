@@ -20,7 +20,7 @@ import warnings
 import sys
 sys.path[0:0] = [""]
 
-from nose.plugins.skip import SkipTest
+#from nose.plugins.skip import SkipTest
 
 from pymongo.errors import ConnectionFailure, InvalidName, AutoReconnect
 from pymongo.database import Database

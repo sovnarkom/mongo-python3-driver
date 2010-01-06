@@ -36,7 +36,7 @@ except ImportError:
     _use_c = False
 
 
-__ZERO = "\x00\x00\x00\x00"
+__ZERO = b"\x00\x00\x00\x00"
 
 
 def __last_error():
@@ -63,7 +63,7 @@ def insert(collection_name, docs, check_keys, safe):
     """
     data = __ZERO
     data += bson._make_c_string(collection_name)
-    data += "".join([bson.BSON.from_dict(doc, check_keys) for doc in docs])
+    data += b"".join([bson.BSON.from_dict(doc, check_keys) for doc in docs])
     if safe:
         (_, insert_message) = __pack_message(2002, data)
         (request_id, error_message) = __last_error()

@@ -36,7 +36,6 @@ To get a :class:`~pymongo.database.Database` instance from a
 import sys
 import socket
 import struct
-import types
 import logging
 import threading
 import random
@@ -328,7 +327,10 @@ class Connection(object): # TODO support auth for pooling
                     sock = socket.socket()
                     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                     sock.settimeout(_CONNECT_TIMEOUT)
-                    sock.connect((host, port))
+                    try:
+                        sock.connect((host, port))
+                    except OverflowError as e:
+                        raise ConnectionFailure(e)
                     sock.settimeout(self.__network_timeout)
                     try:
                         master = self.__master(sock)
@@ -447,8 +449,8 @@ class Connection(object): # TODO support auth for pooling
         """
         choices = list(range(self.__pool_size))
         random.shuffle(choices)
-        choices.sort(lambda x, y: cmp(self.__thread_count[x],
-                                      self.__thread_count[y]))
+        
+        choices.sort(key=lambda x: self.__thread_count[x])
 
         for choice in choices:
             if self.__locks[choice].acquire(False):
@@ -557,13 +559,13 @@ class Connection(object): # TODO support auth for pooling
         Takes length to receive and repeatedly calls recv until able to
         return a buffer of that length, raising ConnectionFailure on error.
         """
-        message = ""
+        message = b""
         while len(message) < length:
             try:
                 chunk = sock.recv(length - len(message))
             except socket.error as e:
                 raise ConnectionFailure(e)
-            if chunk == "":
+            if chunk == b"":
                 raise ConnectionFailure("connection closed")
             message += chunk
         return message
@@ -668,12 +670,14 @@ class Connection(object): # TODO support auth for pooling
             sock_number = self.__thread_map.pop(thread)
             self.__thread_count[sock_number] -= 1
 
-    def __cmp__(self, other):
+    def __ne__(self, other):
         if isinstance(other, Connection):
-            return cmp((self.__host, self.__port),
-                       (other.__host, other.__port))
+            return (self.__host, self.__port) != (other.__host, other.__port)
         return NotImplemented
 
+    def __eq__(self, other):
+        return not self.__ne__(other)
+    
     def __repr__(self):
         if len(self.__nodes) == 1:
             return "Connection(%r, %r)" % (self.__host, self.__port)
