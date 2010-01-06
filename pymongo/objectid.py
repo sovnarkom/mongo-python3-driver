@@ -37,7 +37,7 @@ def _machine_bytes():
     """Get the machine portion of an ObjectId.
     """
     machine_hash = _md5func()
-    machine_hash.update(socket.gethostname())
+    machine_hash.update(socket.gethostname().encode())
     return machine_hash.digest()[0:3]
 
 

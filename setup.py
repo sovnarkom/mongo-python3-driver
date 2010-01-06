@@ -9,15 +9,16 @@ except:
     has_subprocess = False
 import shutil
 
-from ez_setup import use_setuptools
-use_setuptools()
-from setuptools import setup
-from setuptools import Feature
+#from ez_setup import use_setuptools
+#use_setuptools()
+#from setuptools import setup
+#from setuptools import Feature
 from distutils.cmd import Command
 from distutils.command.build_ext import build_ext
+
 from distutils.errors import CCompilerError
 from distutils.errors import DistutilsPlatformError, DistutilsExecError
-from distutils.core import Extension
+from distutils.core import Extension, setup
 
 from pymongo import version
 
@@ -124,20 +125,15 @@ although they do result in significant speed improvements.
                                           "Please use Python >= 2.4 to take "
                                           "advantage of the extension."))
 
-c_ext = Feature(
-    "optional C extension",
-    standard=True,
+if "--no_ext" in sys.argv:
+    sys.argv = [x for x in sys.argv if x != "--no_ext"]
+    ext_modules = []
+else:
     ext_modules=[Extension('pymongo._cbson',
                            include_dirs=['pymongo'],
                            sources=['pymongo/_cbsonmodule.c',
                                     'pymongo/time_helpers.c',
-                                    'pymongo/encoding_helpers.c'])])
-
-if "--no_ext" in sys.argv:
-    sys.argv = [x for x in sys.argv if x != "--no_ext"]
-    features = {}
-else:
-    features = {"c-ext": c_ext}
+                                    'pymongo/encoding_helpers.c'])]
 
 setup(
     name="pymongo",
@@ -150,7 +146,7 @@ setup(
     keywords=["mongo", "mongodb", "pymongo", "gridfs"],
     packages=["pymongo", "gridfs"],
     install_requires=[],
-    features=features,
+    ext_modules = ext_modules,
     license="Apache License, Version 2.0",
     test_suite="nose.collector",
     classifiers=[
