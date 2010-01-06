@@ -23,12 +23,8 @@ import time
 import socket
 import os
 import struct
-try:
-    import hashlib
-    _md5func = hashlib.md5
-except: # for Python < 2.5
-    import md5
-    _md5func = md5.new
+import hashlib
+_md5func = hashlib.md5
 
 from .errors import InvalidId
 
@@ -77,7 +73,7 @@ class ObjectId(object):
     def __generate(self):
         """Generate a new value for this ObjectId.
         """
-        oid = ""
+        oid = b""
 
         # 4 bytes current time
         oid += struct.pack(">i", int(time.time()))
@@ -105,9 +101,11 @@ class ObjectId(object):
         :Parameters:
           - `oid`: a valid ObjectId
         """
+        if isinstance(oid, str):
+            oid = oid.encode()
         if isinstance(oid, ObjectId):
             self.__id = oid.__id
-        elif isinstance(oid, str):
+        elif isinstance(oid, bytes):
             if len(oid) == 12:
                 self.__id = oid
             elif len(oid) == 24:

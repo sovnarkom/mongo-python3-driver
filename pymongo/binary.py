@@ -15,7 +15,7 @@
 """Tools for representing binary data to be stored in MongoDB.
 """
 
-class Binary(str):
+class Binary(bytes):
     """Representation of binary data to be stored in or retrieved from MongoDB.
 
     This is necessary because we want to store Python strings as the BSON
@@ -34,13 +34,15 @@ class Binary(str):
     """
 
     def __new__(cls, data, subtype=2):
-        if not isinstance(data, str):
-            raise TypeError("data must be an instance of str")
+        if not isinstance(data, str) and not isinstance(data, bytes):
+            raise TypeError("data must be an instance of str or bytes but no " + repr(data))
+        if isinstance(data, str):
+            data = data.encode()
         if not isinstance(subtype, int):
             raise TypeError("subtype must be an instance of int")
         if subtype >= 256 or subtype < 0:
             raise ValueError("subtype must be contained in [0, 256)")
-        self = str.__new__(cls, data)
+        self = bytes.__new__(cls, data)
         self.__subtype = subtype
         return self
 
@@ -52,7 +54,7 @@ class Binary(str):
     
     def __eq__(self, other):
         if isinstance(other, Binary):
-            return (self.__subtype, str(self)) == (other.__subtype, str(other))
+            return (self.__subtype, bytes(self)) == (other.__subtype, bytes(other))
         # We don't return NotImplemented here because if we did then
         # Binary("foo") == "foo" would return True, since Binary is a subclass
         # of str...
@@ -60,13 +62,13 @@ class Binary(str):
 
     def __ne__(self, other):
         if isinstance(other, Binary):
-            return (self.__subtype, str(self)) != (other.__subtype, str(other))
+            return (self.__subtype, bytes(self)) != (other.__subtype, bytes(other))
         # We don't return NotImplemented here because if we did then
         # Binary("foo") == "foo" would return True, since Binary is a subclass
         # of str...
         return True
     
-    __hash__ = str.__hash__
+    __hash__ = bytes.__hash__
 
     def __repr__(self):
-        return "Binary(%s, %s)" % ((repr(str(self)).encode('ascii', 'backslashreplace').decode('utf')), self.__subtype)
+        return "Binary(%s, %s)" % ((repr(self.decode()).encode('ascii', 'backslashreplace').decode()), self.__subtype)

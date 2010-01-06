@@ -16,7 +16,6 @@
 
 Generally not needed to be used by application developers."""
 
-import types
 import struct
 import re
 import datetime
@@ -55,23 +54,22 @@ def _get_int(data):
 def _get_c_string(data, length=None):
     if length is None:
         try:
-            length = data.index("\x00")
+            length = data.index(b"\x00")
         except ValueError:
             raise InvalidBSON()
 
-    return (str(data[:length], "utf-8"), data[length + 1:])
+    return (data[:length], data[length + 1:])
 
 
 def _make_c_string(string, check_null=False):
-    if check_null and "\x00" in string:
-        raise InvalidDocument("BSON keys / regex patterns must not "
-                              "contain a NULL character")
     if isinstance(string, str):
-        return string.encode("utf-8") + "\x00"
+        if check_null and "\x00" in string:
+            raise InvalidDocument("BSON keys / regex patterns must not "
+                                  "contain a NULL character")
+        return string.encode() + b"\x00"
     else:
         try:
-            string.decode("utf-8")
-            return string + "\x00"
+            return string + b"\x00"
         except:
             raise InvalidStringData("strings in documents must be valid "
                                     "UTF-8: %r" % string)
@@ -85,7 +83,7 @@ def _validate_number(data):
 def _validate_string(data):
     (length, data) = _get_int(data)
     assert len(data) >= length
-    assert data[length - 1] == "\x00"
+    assert data[length - 1] == b"\x00"
     return data[length:]
 
 
@@ -173,24 +171,24 @@ def _validate_number_long(data):
 
 
 _element_validator = {
-    "\x01": _validate_number,
-    "\x02": _validate_string,
-    "\x03": _validate_object,
-    "\x04": _validate_array,
-    "\x05": _validate_binary,
-    "\x06": _validate_undefined,
-    "\x07": _validate_oid,
-    "\x08": _validate_boolean,
-    "\x09": _validate_date,
-    "\x0A": _validate_null,
-    "\x0B": _validate_regex,
-    "\x0C": _validate_ref,
-    "\x0D": _validate_code,
-    "\x0E": _validate_symbol,
-    "\x0F": _validate_code_w_scope,
-    "\x10": _validate_number_int,
-    "\x11": _validate_timestamp,
-    "\x12": _validate_number_long}
+    0x01: _validate_number,
+    0x02: _validate_string,
+    0x03: _validate_object,
+    0x04: _validate_array,
+    0x05: _validate_binary,
+    0x06: _validate_undefined,
+    0x07: _validate_oid,
+    0x08: _validate_boolean,
+    0x09: _validate_date,
+    0x0A: _validate_null,
+    0x0B: _validate_regex,
+    0x0C: _validate_ref,
+    0x0D: _validate_code,
+    0x0E: _validate_symbol,
+    0x0F: _validate_code_w_scope,
+    0x10: _validate_number_int,
+    0x11: _validate_timestamp,
+    0x12: _validate_number_long}
 
 
 def _validate_element_data(type, data):
@@ -218,17 +216,16 @@ def _validate_document(data, valid_name=None):
         obj_size = struct.unpack("<i", data[:4])[0]
     except struct.error:
         raise InvalidBSON()
-
     assert obj_size <= len(data)
     obj = data[4:obj_size]
     assert len(obj)
 
     eoo = obj[-1]
-    assert eoo == "\x00"
+    assert eoo == 0x00
 
     elements = obj[:-1]
     _validate_elements(elements, valid_name)
-
+    
     return data[obj_size:]
 
 
@@ -262,7 +259,7 @@ def _get_array(data):
 
 def _get_binary(data):
     (length, data) = _get_int(data)
-    subtype = ord(data[0])
+    subtype = data[0]
     data = data[1:]
     if subtype == 2:
         (length2, data) = _get_int(data)
@@ -279,7 +276,7 @@ def _get_oid(data):
 
 
 def _get_boolean(data):
-    return (data[0] == "\x01", data[1:])
+    return (data[0] == 0x01, data[1:])
 
 
 def _get_date(data):
@@ -301,18 +298,20 @@ def _get_null(data):
 def _get_regex(data):
     (pattern, data) = _get_c_string(data)
     (bson_flags, data) = _get_c_string(data)
+
     flags = 0
-    if "i" in bson_flags:
+    if b"i" in bson_flags:
         flags |= re.IGNORECASE
-    if "l" in bson_flags:
+    if b"l" in bson_flags:
         flags |= re.LOCALE
-    if "m" in bson_flags:
+    if b"m" in bson_flags:
         flags |= re.MULTILINE
-    if "s" in bson_flags:
+    if b"s" in bson_flags:
         flags |= re.DOTALL
-    if "u" in bson_flags:
+    if b"u" in bson_flags:
         flags |= re.UNICODE
-    if "x" in bson_flags:
+        pattern = pattern.decode()
+    if b"x" in bson_flags:
         flags |= re.VERBOSE
     return (re.compile(pattern, flags), data)
 
@@ -332,24 +331,24 @@ def _get_long(data):
     return (struct.unpack("<q", data[:8])[0], data[8:])
 
 _element_getter = {
-    "\x01": _get_number,
-    "\x02": _get_string,
-    "\x03": _get_object,
-    "\x04": _get_array,
-    "\x05": _get_binary,
-    "\x06": _get_null, # undefined
-    "\x07": _get_oid,
-    "\x08": _get_boolean,
-    "\x09": _get_date,
-    "\x0A": _get_null,
-    "\x0B": _get_regex,
-    "\x0C": _get_ref,
-    "\x0D": _get_string, # code
-    "\x0E": _get_string, # symbol
-    "\x0F": _get_code_w_scope,
-    "\x10": _get_int, # number_int
-    "\x11": _get_timestamp,
-    "\x12": _get_long,
+    0x01: _get_number,
+    0x02: _get_string,
+    0x03: _get_object,
+    0x04: _get_array,
+    0x05: _get_binary,
+    0x06: _get_null, # undefined
+    0x07: _get_oid,
+    0x08: _get_boolean,
+    0x09: _get_date,
+    0x0A: _get_null,
+    0x0B: _get_regex,
+    0x0C: _get_ref,
+    0x0D: _get_string, # code
+    0x0E: _get_string, # symbol
+    0x0F: _get_code_w_scope,
+    0x10: _get_int, # number_int
+    0x11: _get_timestamp,
+    0x12: _get_long,
 }
 
 
@@ -357,7 +356,9 @@ def _element_to_dict(data):
     element_type = data[0]
     (element_name, data) = _get_c_string(data[1:])
     (value, data) = _element_getter[element_type](data)
-    return (element_name, value, data)
+    if isinstance(value, bytes) and not isinstance(value, Binary):
+        value = value.decode()
+    return (element_name.decode(), value, data)
 
 
 def _elements_to_dict(data):
@@ -380,8 +381,11 @@ _RE_TYPE = type(_valid_array_name)
 
 
 def _element_to_bson(key, value, check_keys):
-    if not isinstance(key, str):
-        raise InvalidDocument("documents must have only string keys, key was %r" % key)
+    if not isinstance(key, str) and not isinstance(key, bytes):
+        raise InvalidDocument("documents must have only string or bytes keys, key was %r" % key)
+    
+    if isinstance(key, bytes):
+        key = key.decode()
 
     if check_keys:
         if key.startswith("$"):
@@ -391,14 +395,14 @@ def _element_to_bson(key, value, check_keys):
 
     name = _make_c_string(key, True)
     if isinstance(value, float):
-        return "\x01" + name + struct.pack("<d", value)
+        return b"\x01" + name + struct.pack("<d", value)
 
     # Use Binary w/ subtype 3 for UUID instances
     try:
         import uuid
 
         if isinstance(value, uuid.UUID):
-            value = Binary(value.bytes, subtype=3)
+            value = Binary(bytes(value.bytes), subtype=3)
     except ImportError:
         pass
 
@@ -406,62 +410,59 @@ def _element_to_bson(key, value, check_keys):
         subtype = value.subtype
         if subtype == 2:
             value = struct.pack("<i", len(value)) + value
-        return "\x05%s%s%s%s" % (name, struct.pack("<i", len(value)),
-                                 chr(subtype), value)
+        return b"\x05" + name + struct.pack("<i", len(value)) + chr(subtype).encode('latin') + value
     if isinstance(value, Code):
         cstring = _make_c_string(value)
         scope = _dict_to_bson(value.scope, False)
         full_length = struct.pack("<i", 8 + len(cstring) + len(scope))
         length = struct.pack("<i", len(cstring))
-        return "\x0F" + name + full_length + length + cstring + scope
-    if isinstance(value, str):
+        return b"\x0F" + name + full_length + length + cstring + scope
+    if isinstance(value, str) or isinstance(value, bytes):
         cstring = _make_c_string(value)
         length = struct.pack("<i", len(cstring))
-        return "\x02" + name + length + cstring
-    if isinstance(value, str):
-        cstring = _make_c_string(value)
-        length = struct.pack("<i", len(cstring))
-        return "\x02" + name + length + cstring
+        return b"\x02" + name + length + cstring
     if isinstance(value, dict):
-        return "\x03" + name + _dict_to_bson(value, check_keys)
+        return b"\x03" + name + _dict_to_bson(value, check_keys)
     if isinstance(value, (list, tuple)):
         as_dict = SON(list(zip([str(i) for i in range(len(value))], value)))
-        return "\x04" + name + _dict_to_bson(as_dict, check_keys)
+        return b"\x04" + name + _dict_to_bson(as_dict, check_keys)
     if isinstance(value, ObjectId):
-        return "\x07" + name + value.binary
+        return b"\x07" + name + value.binary
     if value is True:
-        return "\x08" + name + "\x01"
+        return b"\x08" + name + b"\x01"
     if value is False:
-        return "\x08" + name + "\x00"
+        return b"\x08" + name + b"\x00"
     if isinstance(value, int):
+        long_int_base = int(2**64 / 2)
+        int_base = int(2**32 / 2)
         # TODO this is a really ugly way to check for this...
-        if value > 2**64 / 2 - 1 or value < -2**64 / 2:
+        if value > long_int_base - 1 or value < -long_int_base:
             raise OverflowError("MongoDB can only handle up to 8-byte ints")
-        if value > 2**32 / 2 - 1 or value < -2**32 / 2:
-            return "\x12" + name + struct.pack("<q", value)
-        return "\x10" + name + struct.pack("<i", value)
+        if value > int_base - 1 or value < -int_base:
+            return b"\x12" + name + struct.pack("<q", value)
+        return b"\x10" + name + struct.pack("<i", value)
     if isinstance(value, datetime.datetime):
         millis = int(calendar.timegm(value.timetuple()) * 1000 +
                      value.microsecond / 1000)
-        return "\x09" + name + struct.pack("<q", millis)
+        return b"\x09" + name + struct.pack("<q", millis)
     if value is None:
-        return "\x0A" + name
+        return b"\x0A" + name
     if isinstance(value, _RE_TYPE):
         pattern = value.pattern
-        flags = ""
+        flags = b""
         if value.flags & re.IGNORECASE:
-            flags += "i"
+            flags += b"i"
         if value.flags & re.LOCALE:
-            flags += "l"
+            flags += b"l"
         if value.flags & re.MULTILINE:
-            flags += "m"
+            flags += b"m"
         if value.flags & re.DOTALL:
-            flags += "s"
+            flags += b"s"
         if value.flags & re.UNICODE:
-            flags += "u"
+            flags += b"u"
         if value.flags & re.VERBOSE:
-            flags += "x"
-        return "\x0B" + name + _make_c_string(pattern, True) + _make_c_string(flags)
+            flags += b"x"
+        return b"\x0B" + name + _make_c_string(pattern, True) + _make_c_string(flags)
     if isinstance(value, DBRef):
         return _element_to_bson(key, value.as_doc(), False)
 
@@ -471,8 +472,8 @@ def _element_to_bson(key, value, check_keys):
 
 def _dict_to_bson(dict, check_keys):
     try:
-        elements = ""
-        if "_id" in dict:
+        elements = b""
+        if "_id" in dict.keys():
             elements += _element_to_bson("_id", dict["_id"], False)
         for (key, value) in dict.items():
             if key != "_id":
@@ -484,7 +485,7 @@ def _dict_to_bson(dict, check_keys):
     if length > 4 * 1024 * 1024:
         raise InvalidDocument("document too large - BSON documents are limited "
                               "to 4 MB")
-    return struct.pack("<i", length) + elements + "\x00"
+    return struct.pack("<i", length) + elements + b"\x00"
 if _use_c:
     _dict_to_bson = _cbson._dict_to_bson
 
@@ -497,6 +498,8 @@ def _to_dicts(data):
     :Parameters:
       - `data`: bson data
     """
+    if isinstance(data, str):
+        data = data.encode()
     dicts = []
     while len(data):
         (son, data) = _bson_to_dict(data)
@@ -507,6 +510,8 @@ if _use_c:
 
 
 def _to_dict(data):
+    if isinstance(data, str):
+        data = data.encode()
     (son, _) = _bson_to_dict(data)
     return son
 
@@ -520,8 +525,11 @@ def is_valid(bson):
     :Parameters:
       - `bson`: the data to be validated
     """
-    if not isinstance(bson, bytes):
-        raise TypeError("BSON data must be an instance of a subclass of str")
+    if not isinstance(bson, str) and not isinstance(bson, bytes):
+        raise TypeError("BSON data must be an instance of a subclass of str or byte")
+
+    if isinstance(bson, str):
+        bson = bson.encode()
 
     # 4 MB limit
     if len(bson) > 4 * 1024 * 1024:
@@ -529,12 +537,12 @@ def is_valid(bson):
 
     try:
         remainder = _validate_document(bson)
-        return remainder == ""
+        return remainder == b""
     except (AssertionError, InvalidBSON):
         return False
 
 
-class BSON(str):
+class BSON(bytes):
     """BSON data.
 
     Represents binary data storable in and retrievable from Mongo.
@@ -548,7 +556,10 @@ class BSON(str):
         :Parameters:
           - `bson`: the initial data
         """
-        return str.__new__(cls, bson)
+        if isinstance(bson, str):
+            return bytes.__new__(cls, bson.encode())
+        else:
+            return bytes.__new__(cls, bson)
 
     def from_dict(cls, dict, check_keys=False):
         """Create a new BSON object from a python mapping type (like dict).

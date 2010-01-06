@@ -18,8 +18,9 @@ Regular dictionaries can be used instead of SON objects, but not when the order
 of keys is important. A SON object can be used just like a normal Python
 dictionary."""
 
+from collections import OrderedDict
 
-class SON(dict):
+class SON(OrderedDict):
     """SON data.
 
     A subclass of dict that maintains ordering of keys and provides a few extra
@@ -118,8 +119,8 @@ class SON(dict):
     def values(self):
         return [v for _, v in self.items()]
 
-    def items(self):
-        return list(self.items())
+#    def items(self):
+#        return list(self.items())
 
     def clear(self):
         for key in list(self.keys()):
@@ -175,11 +176,29 @@ class SON(dict):
         except KeyError:
             return default
 
-    def __cmp__(self, other):
+    #def __cmp__(self, other):
+    #    if isinstance(other, SON):
+    #        return cmp((dict(iter(self.items())), list(self.keys())),
+    #                   (dict(iter(other.items())), list(other.keys())))
+    #    return cmp(dict(iter(self.items())), other)
+
+    def __eq__(self, other):
         if isinstance(other, SON):
-            return cmp((dict(iter(self.items())), list(self.keys())),
-                       (dict(iter(other.items())), list(other.keys())))
-        return cmp(dict(iter(self.items())), other)
+            return (dict(iter(self.items())), list(self.keys())) == (dict(iter(other.items())), list(other.keys()))
+        return dict(iter(self.items())) == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        if isinstance(other, SON):
+            return (dict(iter(self.items())), list(self.keys())) < (dict(iter(other.items())), list(other.keys()))
+        return dict(iter(self.items())) < other
+    
+    def __gt__(self, other):
+        if isinstance(other, SON):
+            return (dict(iter(self.items())), list(self.keys())) > (dict(iter(other.items())), list(other.keys()))
+        return dict(iter(self.items())) > other
 
     def __len__(self):
         return len(list(self.keys()))

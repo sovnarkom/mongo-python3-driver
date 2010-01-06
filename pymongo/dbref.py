@@ -14,8 +14,6 @@
 
 """Tools for manipulating DBRefs (references to MongoDB documents)."""
 
-import types
-
 from .son import SON
 
 
@@ -85,10 +83,14 @@ class DBRef(object):
             return "DBRef(%r, %r)" % (self.collection, self.id)
         return "DBRef(%r, %r, %r)" % (self.collection, self.id, self.database)
 
-    def __cmp__(self, other):
+    def __eq__(self, other):
         if isinstance(other, DBRef):
-            return cmp([self.__database, self.__collection, self.__id],
-                       [other.__database, other.__collection, other.__id])
+            return [self.__database, self.__collection, self.__id] == [other.__database, other.__collection, other.__id]
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, DBRef):
+            return [self.__database, self.__collection, self.__id] != [other.__database, other.__collection, other.__id]
         return NotImplemented
 
     def __hash__(self):

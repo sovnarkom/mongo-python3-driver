@@ -28,14 +28,13 @@ class TestBinary(unittest.TestCase):
     def test_binary(self):
         a_string = "hello world"
         a_binary = Binary("hello world")
-        self.assert_(a_binary.startswith("hello"))
-        self.assert_(a_binary.endswith("world"))
+        self.assert_(a_binary.startswith(b"hello"))
+        self.assert_(a_binary.endswith(b"world"))
         self.assert_(isinstance(a_binary, Binary))
         self.failIf(isinstance(a_string, Binary))
 
     def test_exceptions(self):
         self.assertRaises(TypeError, Binary, None)
-        self.assertRaises(TypeError, Binary, b"hello")
         self.assertRaises(TypeError, Binary, 5)
         self.assertRaises(TypeError, Binary, 10.2)
         self.assertRaises(TypeError, Binary, "hello", None)
