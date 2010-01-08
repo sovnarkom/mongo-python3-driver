@@ -21,7 +21,7 @@ import sys
 sys.path[0:0] = [""]
 
 import gridfs
-from .test_connection import get_connection
+from test_connection import get_connection
 
 
 class JustWrite(threading.Thread):
@@ -33,7 +33,7 @@ class JustWrite(threading.Thread):
     def run(self):
         for _ in range(10):
             file = self.fs.open("test", "w")
-            file.write("hello")
+            file.write(b"hello")
             file.close()
 
 
@@ -46,7 +46,7 @@ class JustRead(threading.Thread):
     def run(self):
         for _ in range(10):
             file = self.fs.open("test")
-            assert file.read() == "hello"
+            assert file.read() == b"hello"
             file.close()
 
 
@@ -63,11 +63,11 @@ class TestGridfs(unittest.TestCase):
     def test_open(self):
         self.assertRaises(IOError, self.fs.open, "my file", "r")
         f = self.fs.open("my file", "w")
-        f.write("hello gridfs world!")
+        f.write(b"hello gridfs world!")
         f.close()
 
         g = self.fs.open("my file", "r")
-        self.assertEqual("hello gridfs world!", g.read())
+        self.assertEqual(b"hello gridfs world!", g.read())
         g.close()
 
     def test_list(self):
@@ -90,13 +90,13 @@ class TestGridfs(unittest.TestCase):
         self.assertRaises(TypeError, self.fs.remove, [])
 
         f = self.fs.open("mike", "w")
-        f.write("hi")
+        f.write(b"hi")
         f.close()
         f = self.fs.open("test", "w")
-        f.write("bye")
+        f.write(b"bye")
         f.close()
         f = self.fs.open("hello world", "w")
-        f.write("fly")
+        f.write(b"fly")
         f.close()
         self.assertEqual(["mike", "test", "hello world"], self.fs.list())
         self.assertEqual(self.db.fs.files.find().count(), 3)
@@ -107,11 +107,11 @@ class TestGridfs(unittest.TestCase):
         self.assertEqual(["mike", "hello world"], self.fs.list())
         self.assertEqual(self.db.fs.files.find().count(), 2)
         self.assertEqual(self.db.fs.chunks.find().count(), 2)
-        f = self.fs.open("mike")
-        self.assertEqual(f.read(), "hi")
+        f = self.fs.open(b"mike")
+        self.assertEqual(f.read(), b"hi")
         f.close()
-        f = self.fs.open("hello world")
-        self.assertEqual(f.read(), "fly")
+        f = self.fs.open(b"hello world")
+        self.assertEqual(f.read(), b"fly")
         f.close()
         self.assertRaises(IOError, self.fs.open, "test")
 
@@ -120,18 +120,18 @@ class TestGridfs(unittest.TestCase):
         self.assertEqual([], self.fs.list())
         self.assertEqual(self.db.fs.files.find().count(), 0)
         self.assertEqual(self.db.fs.chunks.find().count(), 0)
-        self.assertRaises(IOError, self.fs.open, "test")
-        self.assertRaises(IOError, self.fs.open, "mike")
-        self.assertRaises(IOError, self.fs.open, "hello world")
+        self.assertRaises(IOError, self.fs.open, b"test")
+        self.assertRaises(IOError, self.fs.open, b"mike")
+        self.assertRaises(IOError, self.fs.open, b"hello world")
 
     def test_open_alt_coll(self):
         f = self.fs.open("my file", "w", "pymongo_test")
-        f.write("hello gridfs world!")
+        f.write(b"hello gridfs world!")
         f.close()
 
         self.assertRaises(IOError, self.fs.open, "my file", "r")
         g = self.fs.open("my file", "r", "pymongo_test")
-        self.assertEqual("hello gridfs world!", g.read())
+        self.assertEqual(b"hello gridfs world!", g.read())
         g.close()
 
     def test_list_alt_coll(self):
@@ -150,13 +150,13 @@ class TestGridfs(unittest.TestCase):
 
     def test_remove_alt_coll(self):
         f = self.fs.open("mike", "w", "pymongo_test")
-        f.write("hi")
+        f.write(b"hi")
         f.close()
         f = self.fs.open("test", "w", "pymongo_test")
-        f.write("bye")
+        f.write(b"bye")
         f.close()
         f = self.fs.open("hello world", "w", "pymongo_test")
-        f.write("fly")
+        f.write(b"fly")
         f.close()
 
         self.fs.remove("test")
@@ -166,10 +166,10 @@ class TestGridfs(unittest.TestCase):
         self.assertEqual(["mike", "hello world"], self.fs.list("pymongo_test"))
 
         f = self.fs.open("mike", collection="pymongo_test")
-        self.assertEqual(f.read(), "hi")
+        self.assertEqual(f.read(), b"hi")
         f.close()
         f = self.fs.open("hello world", collection="pymongo_test")
-        self.assertEqual(f.read(), "fly")
+        self.assertEqual(f.read(), b"fly")
         f.close()
 
         self.fs.remove({}, "pymongo_test")
@@ -180,7 +180,7 @@ class TestGridfs(unittest.TestCase):
 
     def test_threaded_reads(self):
         f = self.fs.open("test", "w")
-        f.write("hello")
+        f.write(b"hello")
         f.close()
 
         threads = []
@@ -201,19 +201,16 @@ class TestGridfs(unittest.TestCase):
             threads[i].join()
 
         f = self.fs.open("test")
-        self.assertEqual(f.read(), "hello")
+        self.assertEqual(f.read(), b"hello")
         f.close()
 
-    # NOTE I do recognize how gross this is. There is no good way to test the
-    # with statement because it is a syntax error in older python versions.
-    # One option would be to use eval and skip the test if it is a syntax
-    # error.
-    if sys.version_info[:2] == (2, 5):
-        from . import gridfs15
-        test_with_statement = gridfs15.test_with_statement
-    elif sys.version_info[:3] >= (2, 6, 0):
-        from . import gridfs16
-        test_with_statement = gridfs16.test_with_statement
+    def test_with_statement(self):
+        with self.fs.open("test", "w") as f:
+            f.write(b"hello world")
+    
+        with self.fs.open("test") as f:
+            self.assertEqual(b"hello world", f.read())
+
 
 if __name__ == "__main__":
     unittest.main()

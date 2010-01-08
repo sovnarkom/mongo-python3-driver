@@ -14,20 +14,14 @@
 
 """File-like object used for reading from and writing to GridFS"""
 
-import types
 import datetime
 import math
 import os
 from threading import Condition
-try:
-    from io import StringIO
-except:
-    from io import StringIO
+from io import BytesIO
 
 from pymongo.son import SON
 from pymongo.database import Database
-from pymongo.objectid import ObjectId
-from pymongo.dbref import DBRef
 from pymongo.binary import Binary
 from .errors import CorruptGridFile
 from pymongo import ASCENDING
@@ -135,8 +129,8 @@ class GridFile(object):
         self.__mode = mode
         if mode == "w":
             self.__erase()
-        self.__buffer = ""
-        self.__write_buffer = StringIO()
+        self.__buffer = b""
+        self.__write_buffer = BytesIO()
         self.__position = 0
         self.__chunk_number = 0
         self.__chunk_size = grid_file["chunkSize"]
@@ -216,7 +210,7 @@ class GridFile(object):
             self.__chunk_number += 1
             self.__position += len(data)
             self.__write_buffer.close()
-            self.__write_buffer = StringIO()
+            self.__write_buffer = BytesIO()
 
     def flush(self):
         """Flush the GridFile to the database.
@@ -270,7 +264,7 @@ class GridFile(object):
         self.__assert_open("r")
 
         if size == 0:
-            return ""
+            return b""
 
         remainder = int(self.length) - self.__position
         if size < 0 or size > remainder:
@@ -354,7 +348,7 @@ class GridFile(object):
             raise IOError(22, "Invalid argument")
 
         self.__position = new_pos
-        self.__buffer = ""
+        self.__buffer = b""
 
     def writelines(self, sequence):
         """Write a sequence of strings to the file.

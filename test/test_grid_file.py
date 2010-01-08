@@ -12,399 +12,205 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the grid_file module.
+"""Tests for the gridfs package.
 """
 
 import unittest
-import datetime
-import os
+import threading
 import sys
 sys.path[0:0] = [""]
 
-from . import qcheck
-from .test_connection import get_connection
-from gridfs.grid_file import GridFile, _SEEK_END, _SEEK_CUR
+import gridfs
+from test_connection import get_connection
 
 
-class TestGridFile(unittest.TestCase):
+class JustWrite(threading.Thread):
+
+    def __init__(self, fs):
+        threading.Thread.__init__(self)
+        self.fs = fs
+
+    def run(self):
+        for _ in range(10):
+            file = self.fs.open("test", "w")
+            file.write(b"hello")
+            file.close()
+
+
+class JustRead(threading.Thread):
+
+    def __init__(self, fs):
+        threading.Thread.__init__(self)
+        self.fs = fs
+
+    def run(self):
+        for _ in range(10):
+            file = self.fs.open("test")
+            assert file.read() == b"hello"
+            file.close()
+
+
+class TestGridfs(unittest.TestCase):
 
     def setUp(self):
         self.db = get_connection().pymongo_test
+        self.db.drop_collection("fs.files")
+        self.db.drop_collection("fs.chunks")
+        self.db.drop_collection("pymongo_test.files")
+        self.db.drop_collection("pymongo_test.chunks")
+        self.fs = gridfs.GridFS(self.db)
 
-    def test_basic(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
+    def test_open(self):
+        self.assertRaises(IOError, self.fs.open, "my file", "r")
+        f = self.fs.open("my file", "w")
+        f.write(b"hello gridfs world!")
+        f.close()
 
+        g = self.fs.open("my file", "r")
+        self.assertEqual(b"hello gridfs world!", g.read())
+        g.close()
+
+    def test_list(self):
+        self.assertEqual(self.fs.list(), [])
+
+        f = self.fs.open("mike", "w")
+        f.close()
+
+        f = self.fs.open("test", "w")
+        f.close()
+
+        f = self.fs.open("hello world", "w")
+        f.close()
+
+        self.assertEqual(["mike", "test", "hello world"], self.fs.list())
+
+    def test_remove(self):
+        self.assertRaises(TypeError, self.fs.remove, 5)
+        self.assertRaises(TypeError, self.fs.remove, None)
+        self.assertRaises(TypeError, self.fs.remove, [])
+
+        f = self.fs.open("mike", "w")
+        f.write(b"hi")
+        f.close()
+        f = self.fs.open("test", "w")
+        f.write(b"bye")
+        f.close()
+        f = self.fs.open("hello world", "w")
+        f.write(b"fly")
+        f.close()
+        self.assertEqual(["mike", "test", "hello world"], self.fs.list())
+        self.assertEqual(self.db.fs.files.find().count(), 3)
+        self.assertEqual(self.db.fs.chunks.find().count(), 3)
+
+        self.fs.remove("test")
+
+        self.assertEqual(["mike", "hello world"], self.fs.list())
+        self.assertEqual(self.db.fs.files.find().count(), 2)
+        self.assertEqual(self.db.fs.chunks.find().count(), 2)
+        f = self.fs.open(b"mike")
+        self.assertEqual(f.read(), b"hi")
+        f.close()
+        f = self.fs.open(b"hello world")
+        self.assertEqual(f.read(), b"fly")
+        f.close()
+        self.assertRaises(IOError, self.fs.open, "test")
+
+        self.fs.remove({})
+
+        self.assertEqual([], self.fs.list())
         self.assertEqual(self.db.fs.files.find().count(), 0)
         self.assertEqual(self.db.fs.chunks.find().count(), 0)
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.write("hello world")
-        file.close()
+        self.assertRaises(IOError, self.fs.open, b"test")
+        self.assertRaises(IOError, self.fs.open, b"mike")
+        self.assertRaises(IOError, self.fs.open, b"hello world")
 
-        self.assertEqual(self.db.fs.files.find().count(), 1)
-        self.assertEqual(self.db.fs.chunks.find().count(), 1)
+    def test_open_alt_coll(self):
+        f = self.fs.open("my file", "w", "pymongo_test")
+        f.write(b"hello gridfs world!")
+        f.close()
 
-        file = GridFile({"filename": "test"}, self.db)
-        self.assertEqual(file.read(), "hello world")
-        file.close()
+        self.assertRaises(IOError, self.fs.open, "my file", "r")
+        g = self.fs.open("my file", "r", "pymongo_test")
+        self.assertEqual(b"hello gridfs world!", g.read())
+        g.close()
 
-        # make sure it's still there...
-        file = GridFile({"filename": "test"}, self.db)
-        self.assertEqual(file.read(), "hello world")
-        file.close()
+    def test_list_alt_coll(self):
+        f = self.fs.open("mike", "w", "pymongo_test")
+        f.close()
 
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.close()
+        f = self.fs.open("test", "w", "pymongo_test")
+        f.close()
 
-        self.assertEqual(self.db.fs.files.find().count(), 1)
-        self.assertEqual(self.db.fs.chunks.find().count(), 0)
+        f = self.fs.open("hello world", "w", "pymongo_test")
+        f.close()
 
-        file = GridFile({"filename": "test"}, self.db)
-        self.assertEqual(file.read(), "")
-        file.close()
+        self.assertEqual([], self.fs.list())
+        self.assertEqual(["mike", "test", "hello world"],
+                         self.fs.list("pymongo_test"))
 
-    def test_md5(self):
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.write("hello world\n")
-        file.close()
+    def test_remove_alt_coll(self):
+        f = self.fs.open("mike", "w", "pymongo_test")
+        f.write(b"hi")
+        f.close()
+        f = self.fs.open("test", "w", "pymongo_test")
+        f.write(b"bye")
+        f.close()
+        f = self.fs.open("hello world", "w", "pymongo_test")
+        f.write(b"fly")
+        f.close()
 
-        file = GridFile({"filename": "test"}, self.db)
-        self.assertEqual(file.md5, "6f5902ac237024bdd0c176cb93063dc4")
-        file.close()
+        self.fs.remove("test")
+        self.assertEqual(["mike", "test", "hello world"],
+                         self.fs.list("pymongo_test"))
+        self.fs.remove("test", "pymongo_test")
+        self.assertEqual(["mike", "hello world"], self.fs.list("pymongo_test"))
 
-    def test_alternate_collection(self):
-        self.db.pymongo_test.files.remove({})
-        self.db.pymongo_test.chunks.remove({})
+        f = self.fs.open("mike", collection="pymongo_test")
+        self.assertEqual(f.read(), b"hi")
+        f.close()
+        f = self.fs.open("hello world", collection="pymongo_test")
+        self.assertEqual(f.read(), b"fly")
+        f.close()
 
+        self.fs.remove({}, "pymongo_test")
+
+        self.assertEqual([], self.fs.list("pymongo_test"))
         self.assertEqual(self.db.pymongo_test.files.find().count(), 0)
         self.assertEqual(self.db.pymongo_test.chunks.find().count(), 0)
-        file = GridFile({"filename": "test"}, self.db, "w",
-                        collection="pymongo_test")
-        file.write("hello world")
-        file.close()
 
-        self.assertEqual(self.db.pymongo_test.files.find().count(), 1)
-        self.assertEqual(self.db.pymongo_test.chunks.find().count(), 1)
-
-        file = GridFile({"filename": "test"}, self.db,
-                        collection="pymongo_test")
-        self.assertEqual(file.read(), "hello world")
-        file.close()
-
-        # test that md5 still works...
-        self.assertEqual(file.md5, "5eb63bbbe01eeed093cb22bb8f5acdc3")
-
-        # make sure it's still there...
-        file = GridFile({"filename": "test"}, self.db,
-                        collection="pymongo_test")
-        self.assertEqual(file.read(), "hello world")
-        file.close()
-
-        file = GridFile({"filename": "test"}, self.db, "w",
-                        collection="pymongo_test")
-        file.close()
-
-        self.assertEqual(self.db.pymongo_test.files.find().count(), 1)
-        self.assertEqual(self.db.pymongo_test.chunks.find().count(), 0)
-
-        file = GridFile({"filename": "test"}, self.db,
-                        collection="pymongo_test")
-        self.assertEqual(file.read(), "")
-        file.close()
-
-    def test_create_grid_file(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        # just write a blank file so that reads on {} don't fail
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.close()
-
-        self.assertRaises(TypeError, GridFile, "hello", self.db)
-        self.assertRaises(TypeError, GridFile, None, self.db)
-        self.assertRaises(TypeError, GridFile, 5, self.db)
-
-        self.assertRaises(TypeError, GridFile, {}, "hello")
-        self.assertRaises(TypeError, GridFile, {}, None)
-        self.assertRaises(TypeError, GridFile, {}, 5)
-        GridFile({}, self.db).close()
-
-        self.assertRaises(TypeError, GridFile, {}, self.db, None)
-        self.assertRaises(TypeError, GridFile, {}, self.db, 5)
-        self.assertRaises(TypeError, GridFile, {}, self.db, [])
-        self.assertRaises(ValueError, GridFile, {}, self.db, "m")
-        self.assertRaises(ValueError, GridFile, {}, self.db, "m")
-        GridFile({}, self.db, "r").close()
-        GridFile({}, self.db, "r").close()
-        GridFile({}, self.db, "w").close()
-        GridFile({}, self.db, "w").close()
-
-        self.assertRaises(TypeError, GridFile, {}, self.db, "r", None)
-        self.assertRaises(TypeError, GridFile, {}, self.db, "r", 5)
-        self.assertRaises(TypeError, GridFile, {}, self.db, "r", [])
-
-        self.assertRaises(IOError, GridFile, {"filename": "mike"}, self.db)
-        GridFile({"filename": "test"}, self.db).close()
-
-    def test_properties(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        self.assertEqual(file.mode, "w")
-        self.failIf(file.closed)
-        file.close()
-        self.assert_(file.closed)
-
-        self.assertRaises(IOError, GridFile, {"filename": "mike"}, self.db)
-        a = GridFile({"filename": "test"}, self.db)
-
-        self.assertEqual(a.mode, "r")
-        self.failIf(a.closed)
-
-        self.assertEqual(a.length, 0)
-        self.assertEqual(a.content_type, None)
-        self.assertEqual(a.name, "test")
-        self.assertEqual(a.chunk_size, 256000)
-        self.assert_(isinstance(a.upload_date, datetime.datetime))
-        self.assertEqual(a.aliases, None)
-        self.assertEqual(a.metadata, None)
-        self.assertEqual(a.md5, "d41d8cd98f00b204e9800998ecf8427e")
-
-        a.content_type = "something"
-        self.assertEqual(a.content_type, "something")
-
-        def set_length():
-            a.length = 10
-        self.assertRaises(AttributeError, set_length)
-
-        def set_chunk_size():
-            a.chunk_size = 100
-        self.assertRaises(AttributeError, set_chunk_size)
-
-        def set_upload_date():
-            a.upload_date = datetime.datetime.utcnow()
-        self.assertRaises(AttributeError, set_upload_date)
-
-        a.aliases = ["hello", "world"]
-        self.assertEqual(a.aliases, ["hello", "world"])
-
-        a.metadata = {"something": "else"}
-        self.assertEqual(a.metadata, {"something": "else"})
-
-        def set_name():
-            a.name = "hello"
-        self.assertRaises(AttributeError, set_name)
-
-        def set_md5():
-            a.md5 = "what"
-        self.assertRaises(AttributeError, set_md5)
-
-        a.close()
-
-    def test_rename(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.close()
-
-        self.assertRaises(IOError, GridFile, {"filename": "mike"}, self.db)
-        a = GridFile({"filename": "test"}, self.db)
-
-        a.rename("mike")
-        self.assertEqual("mike", a.name)
-        a.close()
-
-        self.assertRaises(IOError, GridFile, {"filename": "test"}, self.db)
-        GridFile({"filename": "mike"}, self.db).close()
-
-    def test_flush_close(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.flush()
-        file.close()
-        file.close()
-        self.assertRaises(ValueError, file.write, "test")
-
-        file = GridFile({}, self.db)
-        self.assertEqual(file.read(), "")
-        file.close()
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.write("mike")
-        file.flush()
-        file.write("test")
-        file.flush()
-        file.write("huh")
-        file.flush()
-        file.flush()
-        file.close()
-        file.close()
-        self.assertRaises(ValueError, file.write, "test")
-        file = GridFile({}, self.db)
-        self.assertEqual(file.read(), "miketesthuh")
-        file.close()
-
-    def test_overwrite(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.write("test")
-        file.close()
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.write("mike")
-        file.close()
-
-        f = GridFile({}, self.db)
-        self.assertEqual(f.read(), "mike")
+    def test_threaded_reads(self):
+        f = self.fs.open("test", "w")
+        f.write(b"hello")
         f.close()
 
-    def test_multi_chunk_file(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
+        threads = []
+        for i in range(10):
+            threads.append(JustRead(self.fs))
+            threads[i].start()
 
-        random_string = qcheck.gen_string(qcheck.lift(300000))()
+        for i in range(10):
+            threads[i].join()
 
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.write(random_string)
-        file.close()
+    def test_threaded_writes(self):
+        threads = []
+        for i in range(10):
+            threads.append(JustWrite(self.fs))
+            threads[i].start()
 
-        self.assertEqual(self.db.fs.files.find().count(), 1)
-        self.assertEqual(self.db.fs.chunks.find().count(), 2)
+        for i in range(10):
+            threads[i].join()
 
-        f = GridFile({}, self.db)
-        self.assertEqual(f.read(), random_string)
+        f = self.fs.open("test")
+        self.assertEqual(f.read(), b"hello")
         f.close()
 
-    def test_small_chunks(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
+    def test_with_statement(self):
+        with self.fs.open("test", "w") as f:
+            f.write(b"hello world")
+    
+        with self.fs.open("test") as f:
+            self.assertEqual(b"hello world", f.read())
 
-        self.files = 0
-        self.chunks = 0
-
-        def helper(data):
-            filename = qcheck.gen_printable_string(qcheck.lift(20))()
-
-            f = GridFile({"filename": filename, "chunkSize": 1}, self.db, "w")
-            f.write(data)
-            f.close()
-
-            self.files += 1
-            self.chunks += len(data)
-
-            self.assertEqual(self.db.fs.files.find().count(), self.files)
-            self.assertEqual(self.db.fs.chunks.find().count(), self.chunks)
-
-            f = GridFile({"filename": filename}, self.db)
-            self.assertEqual(f.read(), data)
-            f.close()
-
-            f = GridFile({"filename": filename}, self.db)
-            self.assertEqual(f.read(10) + f.read(10), data)
-            f.close()
-            return True
-
-        qcheck.check_unittest(self, helper,
-                              qcheck.gen_string(qcheck.gen_range(0, 20)))
-
-    def test_seek(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test", "chunkSize": 3}, self.db, "w")
-        file.write("hello world")
-        self.assertRaises(ValueError, file.seek, 0)
-        file.close()
-
-        file = GridFile({"filename": "test"}, self.db, "r")
-        self.assertEqual(file.read(), "hello world")
-        file.seek(0)
-        self.assertEqual(file.read(), "hello world")
-        file.seek(1)
-        self.assertEqual(file.read(), "ello world")
-        self.assertRaises(IOError, file.seek, -1)
-
-        file.seek(-3, _SEEK_END)
-        self.assertEqual(file.read(), "rld")
-        file.seek(0, _SEEK_END)
-        self.assertEqual(file.read(), "")
-        self.assertRaises(IOError, file.seek, -100, _SEEK_END)
-
-        file.seek(3)
-        file.seek(3, _SEEK_CUR)
-        self.assertEqual(file.read(), "world")
-        self.assertRaises(IOError, file.seek, -100, _SEEK_CUR)
-
-        file.close()
-
-    def test_tell(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test", "chunkSize": 3}, self.db, "w")
-        file.write("hello world")
-        self.assertRaises(ValueError, file.tell)
-        file.close()
-
-        file = GridFile({"filename": "test"}, self.db, "r")
-        self.assertEqual(file.tell(), 0)
-        file.read(0)
-        self.assertEqual(file.tell(), 0)
-        file.read(1)
-        self.assertEqual(file.tell(), 1)
-        file.read(2)
-        self.assertEqual(file.tell(), 3)
-        file.read()
-        self.assertEqual(file.tell(), file.length)
-
-        file.close()
-
-    def test_modes(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        self.assertRaises(ValueError, file.read)
-        file.write("hello")
-        file.close()
-        self.assertRaises(ValueError, file.read)
-        self.assertRaises(ValueError, file.write, "hello")
-
-        file = GridFile({"filename": "test"}, self.db, "r")
-        self.assertRaises(ValueError, file.write, "hello")
-        file.read()
-        file.close()
-        self.assertRaises(ValueError, file.read)
-        self.assertRaises(ValueError, file.write, "hello")
-
-    def test_multiple_reads(self):
-        self.db.fs.files.remove({})
-        self.db.fs.chunks.remove({})
-
-        file = GridFile({"filename": "test"}, self.db, "w")
-        file.write("hello world")
-        file.close()
-
-        file = GridFile({"filename": "test"}, self.db, "r")
-        self.assertEqual(file.read(2), "he")
-        self.assertEqual(file.read(2), "ll")
-        self.assertEqual(file.read(2), "o ")
-        self.assertEqual(file.read(2), "wo")
-        self.assertEqual(file.read(2), "rl")
-        self.assertEqual(file.read(2), "d")
-        self.assertEqual(file.read(2), "")
-        file.close()
-
-    def test_spec_with_id(self):
-        # This was raising a TypeError at one point - make sure it doesn't
-        file = GridFile({"_id": "foobar", "filename": "foobar"}, self.db, "w")
-        file.close()
 
 if __name__ == "__main__":
     unittest.main()
