@@ -17,7 +17,6 @@
 Performs all writes to Master instance and distributes reads among all
 instances."""
 
-import types
 import random
 
 from .database import Database
@@ -93,7 +92,7 @@ class MasterSlaveConnection(object):
     # _connection_to_use is a hack that we need to include to make sure
     # that killcursor operations can be sent to the same instance on which
     # the cursor actually resides...
-    def _send_message(self, operation, data, safe=False, _connection_to_use=None):
+    def _send_message(self, message, safe=False, _connection_to_use=None):
         """Say something to Mongo.
 
         Sends a message on the Master connection. This is used for inserts,
@@ -103,18 +102,20 @@ class MasterSlaveConnection(object):
         request id of the sent message.
 
         :Parameters:
-          - `operation`: opcode of the message
-          - `data`: data to send
+          - `message` (
+              - `operation`: opcode of the message
+              - `data`: data to send
+            )
           - `safe`: perform a getLastError after sending the message
         """
         if _connection_to_use is None or _connection_to_use == -1:
-            return self.__master._send_message(operation, data, safe)
-        return self.__slaves[_connection_to_use]._send_message(operation, data, safe)
+            return self.__master._send_message(message, safe)
+        return self.__slaves[_connection_to_use]._send_message(message, safe)
 
     # _connection_to_use is a hack that we need to include to make sure
     # that getmore operations can be sent to the same instance on which
     # the cursor actually resides...
-    def _send_message_with_response(self, operation, data,
+    def _send_message_with_response(self, message,
                                     _sock=None, _connection_to_use=None,
                                     _must_use_master=False):
         """Receive a message from Mongo.
@@ -122,18 +123,19 @@ class MasterSlaveConnection(object):
         Sends the given message and returns a (connection_id, response) pair.
 
         :Parameters:
-          - `operation`: opcode of the message to send
-          - `data`: data to send
+          - `message` (
+              - `operation`: opcode of the message to send
+              - `data`: data to send
+          )
         """
         if _connection_to_use is not None:
             if _connection_to_use == -1:
-                return (-1, self.__master._send_message_with_response(operation,
-                                                                      data,
+                return (-1, self.__master._send_message_with_response(message,
                                                                       _sock))
             else:
                 return (_connection_to_use,
                         self.__slaves[_connection_to_use]
-                        ._send_message_with_response(operation, data, _sock))
+                        ._send_message_with_response(message, _sock))
 
         # for now just load-balance randomly among slaves only...
         connection_id = random.randrange(0, len(self.__slaves))
@@ -142,12 +144,10 @@ class MasterSlaveConnection(object):
         # master instance. any queries in a request must be sent to the
         # master since that is where writes go.
         if _must_use_master or self.__in_request or connection_id == -1:
-            return (-1, self.__master._send_message_with_response(operation,
-                                                                  data, _sock))
+            return (-1, self.__master._send_message_with_response(message, _sock))
 
         return (connection_id,
-                self.__slaves[connection_id]._send_message_with_response(operation,
-                                                                         data,
+                self.__slaves[connection_id]._send_message_with_response(message,
                                                                          _sock))
 
     def start_request(self):
@@ -167,12 +167,14 @@ class MasterSlaveConnection(object):
         """
         self.__in_request = False
         self.__master.end_request()
-
-    def __cmp__(self, other):
+    
+    def __ne__(self, other):
         if isinstance(other, MasterSlaveConnection):
-            return cmp((self.__master, self.__slaves),
-                       (other.__master, other.__slaves))
+            return (self.__master, self.__slaves) != (other.__master, other.__slaves)
         return NotImplemented
+        
+    def _eq_(self, other):
+        return not self.__ne__(other)    
 
     def __repr__(self):
         return "MasterSlaveConnection(%r, %r)" % (self.__master, self.__slaves)

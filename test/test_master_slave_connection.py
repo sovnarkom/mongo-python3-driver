@@ -20,7 +20,7 @@ import time
 import sys
 sys.path[0:0] = [""]
 
-from nose.plugins.skip import SkipTest
+#from nose.plugins.skip import SkipTest
 
 from pymongo.errors import ConnectionFailure, InvalidName
 from pymongo.errors import CollectionInvalid, OperationFailure
@@ -35,7 +35,6 @@ class TestMasterSlaveConnection(unittest.TestCase):
     def setUp(self):
         host = os.environ.get("DB_IP", "localhost")
         self.master = Connection(host, int(os.environ.get("DB_PORT", 27017)))
-
         self.slaves = []
         try:
             self.slaves.append(Connection(os.environ.get("DB_IP2", host),
@@ -150,8 +149,9 @@ class TestMasterSlaveConnection(unittest.TestCase):
     # This was failing because commands were being sent to the slaves
     def test_create_collection(self):
         self.connection.drop_database('pymongo_test')
-
+        
         collection = self.db.create_collection('test')
+                
         self.assert_(isinstance(collection, Collection))
 
         self.assertRaises(CollectionInvalid, self.db.create_collection, 'test')
