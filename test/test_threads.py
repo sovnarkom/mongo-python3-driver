@@ -17,9 +17,9 @@
 import unittest
 import threading
 
-from nose.plugins.skip import SkipTest
+#from nose.plugins.skip import SkipTest
 
-from .test_connection import get_connection
+from test_connection import get_connection
 from pymongo.errors import AutoReconnect
 
 
