@@ -71,7 +71,7 @@ class TestTimeoutableLock(unittest.TestCase):
         self.assert_(lock.acquire())
         before = time.time()
         self.failIf(lock.acquire(timeout=0.25))
-        self.assertAlmostEqual(0.25, time.time() - before, 1)
+        self.assertAlmostEqual(0.25, time.time() - before, places=1)
 
     def test_blocking_acquire(self):
         lock = TimeoutableLock()
