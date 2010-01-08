@@ -69,6 +69,7 @@ def _make_c_string(string, check_null=False):
         return string.encode() + b"\x00"
     else:
         try:
+            string.decode() # if we can decode — it's ok
             return string + b"\x00"
         except:
             raise InvalidStringData("strings in documents must be valid "
@@ -384,9 +385,12 @@ def _element_to_bson(key, value, check_keys):
     if not isinstance(key, str) and not isinstance(key, bytes):
         raise InvalidDocument("documents must have only string or bytes keys, key was %r" % key)
     
-    if isinstance(key, bytes):
-        key = key.decode()
-
+    try:
+        if isinstance(key, bytes):
+            key = key.decode()
+    except:
+        raise InvalidStringData()
+    
     if check_keys:
         if key.startswith("$"):
             raise InvalidName("key %r must not start with '$'" % key)

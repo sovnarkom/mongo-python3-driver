@@ -175,9 +175,8 @@ class TestBSON(unittest.TestCase):
                               qcheck.gen_mongo_dict(3))
 
     def test_bad_encode(self):
-        return # TODO: may be it's ok to autoconvert?
         self.assertRaises(InvalidStringData, BSON.from_dict,
-                          {"lalala": '\xf4\xe0\xf0\xe1\xc0 Color Touch'})
+                          {"lalala": b'\xf4\xe0\xf0\xe1\xc0 Color Touch'})
 
 
     def test_overflow(self):
@@ -220,15 +219,12 @@ class TestBSON(unittest.TestCase):
 
         x = {"aéあ".encode("utf-8"): "aéあ".encode("utf-8")}
         self.assertEqual(w, BSON.from_dict(x).to_dict())
-
-        # disabled due to automatic conversion
-        # TODO: review
         
-        #y = {"hello": "aé".encode("iso-8859-1")}
-        #self.assertRaises(InvalidStringData, BSON.from_dict, y)
+        y = {"hello": "aé".encode("iso-8859-1")}
+        self.assertRaises(InvalidStringData, BSON.from_dict, y)
 
-        #z = {"aé".encode("iso-8859-1"): "hello"}
-        #self.assertRaises(InvalidStringData, BSON.from_dict, z)
+        z = {"aé".encode("iso-8859-1"): "hello"}
+        self.assertRaises(InvalidStringData, BSON.from_dict, z)
 
     def test_null_character(self):
         doc = {"a": "\x00"}
