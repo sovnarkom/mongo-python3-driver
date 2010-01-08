@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+	<title>sovnarkom/mongo-python3-driver @ GitHub</title>
+	
+	<style type="text/css">
+		body {
+  		margin-top: 1.0em;
+  		background-color: #f04be7;
+		  font-family: "Helvetica,Arial,FreeSans"; 
+  		color: #000000;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+		h1 { font-size: 3.8em; color: #0fb418; margin-bottom: 3px; }
+		h1 .small { font-size: 0.4em; }
+		h1 a { text-decoration: none }
+		h2 { font-size: 1.5em; color: #0fb418; }
+    h3 { text-align: center; color: #0fb418; }
+    a { color: #0fb418; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+		pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+	</style>
+	
+</head>
+
+<body>
+  <a href="http://github.com/sovnarkom/mongo-python3-driver"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
+  <div id="container">
+
+    <div class="download">
+      <a href="http://github.com/sovnarkom/mongo-python3-driver/zipball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+      <a href="http://github.com/sovnarkom/mongo-python3-driver/tarball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+    </div>
+      
+    <h1><a href="http://github.com/sovnarkom/mongo-python3-driver">mongo-python3-driver</a> 
+      <span class="small">by <a href="http://github.com/sovnarkom">sovnarkom</a></span></h1>
+
+    <div class="description">
+      Python driver for MongoDB
+
+branch py3k for python3.1 and higher.
+    </div>
+
+    <p>known issues with py3k branch:
+
+0. No extension modules in C are converted, so it's slow
+
+1. FAIL: test_drop_database. Sometimes in test_connection and test_master_slave_connection.
+
+2. No support for "nose" test, so they disabled
+
+3. pymongo.errors.ConfigurationError: trying to connect directly to slave localhost:27018 - must specify slave_okay to connect to slaves in test_paired
+
+4.  def test_id_shuffling(self) in test_son_manipulator was inverted at line 82:
+# Inverted due to the fact that SON object doesn't shuffles id by self:
+        # TODO: Needs review and 2.6 test
+        self.assertFalse(incoming_moves_id(SON([("hello", "world"),
+                                            ("_id", 12)])))
+
+5. We need to figure out what to do with unicode/bytes in gridfs and entire library.</p><h2>Authors</h2>
+<p>Andrey Fedorov (anfedorov@gmail.com)<br/>brad clements (bkc@server3.strader-ferris.com)<br/>Eliot Horowitz (eliot@10gen.com)<br/>Fajran Iman Rusadi (fajran@gmail.com)<br/>Gregg Lind (gregg@renesys.com)<br/>Harry Marr (harry.marr@gmail.com)<br/>serbaut (joakim.sernbrant@trioptima.com)<br/>Joshua Roesslein (jroesslein@gmail.com)<br/>Mike Dirolf (mike@10gen.com)<br/>Michael Stephens (mike@mindleak.com)<br/>Mathias Stearn (redbeard0531@gmail.com)<br/>sovnarkom (sovnarkom@somebugs.com)<br/>Alexander Artemenko (svetlyak.40wt@gmail.com)<br/>yellow (yellow@10gen.com)<br/><br/>      </p>
+<h2>Contact</h2>
+<p>Александр Чиченин (sovnarkom@somebugs.com)<br/>      </p>
+
+
+    <h2>Download</h2>
+    <p>
+      You can download this project in either
+      <a href="http://github.com/sovnarkom/mongo-python3-driver/zipball/master">zip</a> or
+      <a href="http://github.com/sovnarkom/mongo-python3-driver/tarball/master">tar</a> formats.
+    </p>
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+      by running:
+      <pre>$ git clone git://github.com/sovnarkom/mongo-python3-driver</pre>
+    </p>
+      
+    <div class="footer">
+      get the source code on GitHub : <a href="http://github.com/sovnarkom/mongo-python3-driver">sovnarkom/mongo-python3-driver</a>
+    </div>
+    
+  </div>
+
+  
+</body>
+</html>
