@@ -207,6 +207,8 @@ class Database(object):
             :class:`~pymongo.errors.OperationFailure` if there are any
           - `allowable_errors`: if `check` is ``True``, error messages in this
             list will be ignored by error-checking
+
+        .. versionadded:: 1.3+
         """
         result = self["$cmd"].find_one(command, _sock=_sock,
                                        _must_use_master=True,
@@ -360,6 +362,33 @@ class Database(object):
         md5hash = _md5func()
         md5hash.update((username + ":mongo:" + password).encode())
         return str(md5hash.hexdigest())
+
+    def add_user(self, name, password):
+        """Create user `name` with password `password`.
+
+        Add a new user with permissions for this :class:`Database`.
+
+        .. note:: Will change the password if user `name` already exists.
+
+        :Parameters:
+          - `name`: the name of the user to create
+          - `password`: the password of the user to create
+        """
+        self.system.users.update({"user": name},
+                                 {"user": name,
+                                  "pwd": self._password_digest(name, password)},
+                                 upsert=True, safe=True)
+
+    def remove_user(self, name):
+        """Remove user `name` from this :class:`Database`.
+
+        User `name` will no longer have permissions to access this
+        :class:`Database`.
+
+        :Paramaters:
+          - `name`: the name of the user to remove
+        """
+        self.system.users.remove({"user": name}, safe=True)
 
     def authenticate(self, name, password):
         """Authenticate to use this database.

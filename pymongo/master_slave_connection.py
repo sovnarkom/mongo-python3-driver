@@ -36,11 +36,6 @@ class MasterSlaveConnection(object):
         connection pooling, etc. 'Connection' instances used as slaves should
         be created with the slave_okay option set to True.
 
-        If connection pooling is being used the connections should be created
-        with "auto_start_request" mode set to False. All request functionality
-        that is needed should be initiated by calling `start_request` on the
-        `MasterSlaveConnection` instance.
-
         Raises TypeError if `master` is not an instance of `Connection` or
         slaves is not a list of at least one `Connection` instances.
 
@@ -144,7 +139,8 @@ class MasterSlaveConnection(object):
         # master instance. any queries in a request must be sent to the
         # master since that is where writes go.
         if _must_use_master or self.__in_request or connection_id == -1:
-            return (-1, self.__master._send_message_with_response(message, _sock))
+            return (-1, self.__master._send_message_with_response(message,
+                                                                  _sock))
 
         return (connection_id,
                 self.__slaves[connection_id]._send_message_with_response(message,
@@ -153,12 +149,11 @@ class MasterSlaveConnection(object):
     def start_request(self):
         """Start a "request".
 
-        See documentation for `Connection.start_request`. Note that all
-        operations performed within a request will be sent using the Master
-        connection.
+        Start a sequence of operations in which order matters. Note
+        that all operations performed within a request will be sent
+        using the Master connection.
         """
         self.__in_request = True
-        self.__master.start_request()
 
     def end_request(self):
         """End the current "request".
