@@ -19,11 +19,9 @@ import sys
 sys.path[0:0] = [""]
 
 import datetime
-import cProfile
+
 
 from pymongo import connection
-from pymongo import ASCENDING
-
 trials = 2
 per_trial = 5000
 batch_size = 100
@@ -60,7 +58,7 @@ def insert(db, collection, object):
         db[collection].insert(to_insert)
 
 def insert_batch(db, collection, object):
-    for i in range(per_trial / batch_size):
+    for i in range(int(per_trial / batch_size)):
         db[collection].insert([object] * batch_size)
 
 def find_one(db, collection, x):
@@ -94,11 +92,11 @@ def main():
     timed("insert (medium, no index)", insert, [db, 'medium_none', medium], setup_insert)
     timed("insert (large, no index)", insert, [db, 'large_none', large], setup_insert)
 
-    db.small_index.create_index("x", ASCENDING)
+    db.small_index.create_index("x")
     timed("insert (small, indexed)", insert, [db, 'small_index', small])
-    db.medium_index.create_index("x", ASCENDING)
+    db.medium_index.create_index("x")
     timed("insert (medium, indexed)", insert, [db, 'medium_index', medium])
-    db.large_index.create_index("x", ASCENDING)
+    db.large_index.create_index("x")
     timed("insert (large, indexed)", insert, [db, 'large_index', large])
 
     timed("batch insert (small, no index)", insert_batch, [db, 'small_bulk', small], setup_insert)
@@ -136,5 +134,4 @@ def main():
           [db, 'large_index', {"$gt": per_trial / 2, "$lt": per_trial / 2 + batch_size}])
 
 if __name__ == "__main__":
-#    cProfile.run("main()")
     main()
