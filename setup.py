@@ -19,6 +19,7 @@ from distutils.command.build_ext import build_ext
 from distutils.errors import CCompilerError
 from distutils.errors import DistutilsPlatformError, DistutilsExecError
 from distutils.core import Extension, setup
+from distutils.util import get_platform
 
 from pymongo import version
 
@@ -133,7 +134,30 @@ else:
                            include_dirs=['pymongo'],
                            sources=['pymongo/_cbsonmodule.c',
                                     'pymongo/time_helpers.c',
-                                    'pymongo/encoding_helpers.c'])]
+                                    'pymongo/encoding_helpers.c']),
+                 Extension('pymongo._cybson',
+                           include_dirs=['pymongo'],
+                           sources=['pymongo/_cybson.c'])
+                 ]
+
+import re
+
+try:
+    f = open('/System/Library/CoreServices/SystemVersion.plist')
+except IOError:
+    # We're on a plain darwin box, fall back to the default
+    # behaviour.
+    pass
+else:
+    m = re.search(
+            r'<key>ProductUserVisibleVersion</key>\s*' +
+            r'<string>(.*?)</string>', f.read())
+    f.close()
+    if m is not None:
+        macver = '.'.join(m.group(1).split('.')[:2])
+    # else: fall back to the default behaviour
+
+print(get_platform())
 
 setup(
     name="pymongo",

@@ -35,7 +35,13 @@ from pymongo.code import Code
 from pymongo.objectid import ObjectId
 from pymongo.dbref import DBRef
 from pymongo.son import SON
-from pymongo.bson import BSON, is_valid, _to_dicts
+
+try:
+    from pymongo._cybson import BSON, is_valid, _to_dicts
+    print('rly?!')
+except:
+    from pymongo.bson import BSON, is_valid, _to_dicts
+    
 from pymongo.errors import InvalidDocument, InvalidStringData
 
 

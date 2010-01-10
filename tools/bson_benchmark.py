@@ -19,24 +19,23 @@ this should be updated to use that if it exists an `simplejson` otherwise.
 """
 
 import datetime
-try:
-    import cProfile as profile
-except:
-    import profile
+import cProfile as profile
 import sys
 sys.path[0:0] = [""]
 
-# TODO try importing json first and do simplejson if that fails
-import simplejson as json
-
-from pymongo import bson
-
 trials = 100000
+
+try:
+    from pymongo import _cybson as bson
+    print('with cython extension', trials, 'trials')
+except:
+    from pymongo import bson
+    print('without cython extension', trials, 'trials')
 
 def run(case, function):
     start = datetime.datetime.now()
     for _ in range(trials):
-       result = function(case)
+        result = function(case)
     print("took: %s" % (datetime.datetime.now() - start))
     return result
 
@@ -59,12 +58,8 @@ def main():
         print("case: %r" % case)
         print("enc bson", end=' ')
         enc_bson = run(case, bson.BSON.from_dict)
-        print("enc json", end=' ')
-        enc_json = run(case, json.dumps)
         print("dec bson", end=' ')
         assert case == run(enc_bson, bson._to_dict)
-        print("dec json", end=' ')
-        assert case == run(enc_json, json.loads)
 
 if __name__ == "__main__":
     profile.run("main()")
