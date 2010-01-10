@@ -7,19 +7,13 @@ try:
     has_subprocess = True
 except:
     has_subprocess = False
-import shutil
 
-#from ez_setup import use_setuptools
-#use_setuptools()
-#from setuptools import setup
-#from setuptools import Feature
 from distutils.cmd import Command
 from distutils.command.build_ext import build_ext
 
 from distutils.errors import CCompilerError
 from distutils.errors import DistutilsPlatformError, DistutilsExecError
 from distutils.core import Extension, setup
-from distutils.util import get_platform
 
 from pymongo import version
 
@@ -80,12 +74,12 @@ Please ask in the user forums for help.
 
 
 if sys.platform == 'win32' and sys.version_info > (2, 6):
-   # 2.6's distutils.msvc9compiler can raise an IOError when failing to
-   # find the compiler
-   build_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError,
+    # 2.6's distutils.msvc9compiler can raise an IOError when failing to
+    # find the compiler
+    build_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError,
                  IOError)
 else:
-   build_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+    build_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
 
 
 class custom_build_ext(build_ext):
@@ -140,24 +134,6 @@ else:
                            sources=['pymongo/_cybson.c'])
                  ]
 
-import re
-
-try:
-    f = open('/System/Library/CoreServices/SystemVersion.plist')
-except IOError:
-    # We're on a plain darwin box, fall back to the default
-    # behaviour.
-    pass
-else:
-    m = re.search(
-            r'<key>ProductUserVisibleVersion</key>\s*' +
-            r'<string>(.*?)</string>', f.read())
-    f.close()
-    if m is not None:
-        macver = '.'.join(m.group(1).split('.')[:2])
-    # else: fall back to the default behaviour
-
-print(get_platform())
 
 setup(
     name="pymongo",
