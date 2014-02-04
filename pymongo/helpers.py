@@ -82,20 +82,33 @@ def _unpack_response(response, cursor_id=None):
         valid at server response
     """
     response_flag = struct.unpack("<i", response[:4])[0]
-    if response_flag == 1:
+
+    # Flag bit 0: CursorNotFound
+    if response_flag & 1: # Check to see if bit 0 is set (2**0 == 1)
         # Shouldn't get this response if we aren't doing a getMore
         assert cursor_id is not None
 
         raise OperationFailure("cursor id '%s' not valid at server" %
                                cursor_id)
-    elif response_flag == 2:
+    
+    # Flag bit 1: QueryFailure
+    if response_flag & 2: # Check to see if bit 1 is set (2**1 == 2)
         error_object = bson.BSON(response[20:]).to_dict()
         if error_object["$err"] == "not master":
             raise AutoReconnect("master has changed")
         raise OperationFailure("database error: %s" %
                                error_object["$err"])
-    else:
-        assert response_flag == 0
+
+    # Flag bit 2: ShardConfigState
+    # "Drivers should ignore this" (from Mongo Wire Protocol)
+
+    
+    # Flag bit 3: AwaitCapable
+    # As of Mongod version 1.6, this is always set.
+    
+    # Flag bit 4-31
+    # Bits 4-31 should be ignored (from Mongo Wire Protocol, Feb 2012)
+
 
     result = {}
     result["cursor_id"] = struct.unpack("<q", response[4:12])[0]
